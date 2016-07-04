@@ -13,6 +13,8 @@ Baka-Epub is a tool to make ePub from light novel in Baka-Tsuki. It consists of 
 
 Baka-Epub is designed especially for me. So if you're not me, I recommend using [WebToEpub](https://github.com/dteviot/WebToEpub) instead.
 
+For change logs, todo list, random notes, or whatever, see [baka_epub_dev_notes.txt](baka_epub_dev_notes.txt) (yes, plain text).
+
 ## Requirements
 
 To run Baka-Epub, you need Firefox and Greasemonkey for the user script, and Sigil version 0.9.5+ for the plugin. 

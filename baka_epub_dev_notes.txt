@@ -1,0 +1,98 @@
+- Sigil will convert html into xhtml automatically when importing. No need to convert beforehand. [OK]
+- Sigil sometimes gives plugin the wrong file if the epub is not fresh. Recreate the file if something fishy is going on.
+- Simple img tag with height OR width set to 100% is usually fine. SVG wrapping isn't a must, unless the display has weird ratio. <p><img alt="" src="../Images/vol_16_-_002-003.png" width="100%" /></p> usually works fine for landscape images, and <p><img alt="" src="../Images/vol_16_-_002-003.png" height="100%" /></p> usually works fine for portraint images.
+- Procedure: Open full text page -> Run ebook converter -> Save as html -> Run Sigil / New book -> Click Text -> Add existing files... -> Select the html file -> Rename it into Body.xhtml -> Add/rename cover image as Cover.jpg or Cover.png -> Run the plugin -> Optionally add meta info, clean up the remaining of the gallery, remove unused images, and do other changes -> Generate ToC -> Check & save.
+- Cleanups for already saved html (or earlier than mod 2.6): 
+  + Remove from <h1 id="firstHeading" xml:lang="en"><span dir="auto">Leviathan:Volume 1</span></h1> until <div dir="ltr" id="mw-content-text" xml:lang="en"> (before the gallery). That also unwraps 2 div tags which contain the whole main document.
+  + Remove 2 corresponding </div> tags at the end. They're between NewPP limit report and </body></html>
+  + Remove toc div.
+  + Add alt="__galleryimage__" to images in the gallery.
+  + Prettify the title.
+  + Re-order images in the gallery if necessary. They can go out of order because the ebook converter uses async callback in loading images. Turn off image in browser might help, but only to some degree. Update: turn off image in browser, run the ebook converter twice, get the second result. The order in gallery will be correct. Update2: from bke v0.6, the gallery will stay in order in all cases.
+- Smart quotes:
+  + Double: left: &ldquo; “, right: &rdquo; ”
+  + Single: left: &lsquo; ‘, right: &rsquo; ’
+
+ [2016.06.30][modv2.14]
+ [2016.07.04][bke_v0.6.4]
+ [2016.07.04][bke_v0.6.4+1.0.6][passed]
+
+- Pls write a helper script for making epub from other sources: wrap img in svg, handle center, unwrap non-sense span, insert footnotes, join multi-line paragraph into one? [ongoing, porting changes pending]
+- Customize epub styles?
+- Split main text into several sections?
+- Correct stupid smart quotes or just unsmarten them all? When there're a lot of quotes (speech of multiple people), dump algorithm will be confused and produce stupid quotes.
+- Inner illustration might have captions (div.thumbcaption) under it, inside the thumbnail. Do something with it? BTE-GEN doesn't and ebook coverter doesn't keep them. Example: https://www.baka-tsuki.org/project/index.php?title=Mondaiji-tachi_ga_isekai_kara_kuru_soudesu_yo:Volume_10#Short_Story . Putting <title>text</title> inside svg tag doesn't make any difference with calibre.
+- Support multiple html inputs? Reduce the number of steps?
+- Option to compress png to jpg? Option to not eliminate everything above the gallery?
+- Generate ToC as well? Sigil has that feature and it works excelently.
+- Potential problem in plugin: tag name not in lowercase
+- Move to Sigil BS4/Gumbo parser
+- Pls re-test previous samples to make sure no regression has appeared.
+
+- Pls remove "Editing " or "Creating " from title in preview tab mode (&action=edit in url). [done, in v0.6.4]
+- Pls fix the invalid css code in the "Status: Incomplete" message in Ultimate_Antihero:Volume_3_Chapter_1. Even Firefox's inspector says it's invalid : `{{#ifeq: yes | yes | margin:auto;` into `/*! {{#ifeq: yes | yes | margin:auto; */` [done]
+- Pls rename the Sigil plugin [done]
+- Pls remove lang="en" attribute from <html> tag (FlightCrew complains). [done]
+- Pls handle duplicated items in the gallery [done, no dup will be added]
+- BKE-P: all navigators disappear in Monogatari Series - Volume 14 - Koyomimonogatari in preview edit mode. It's a good thing. But pls investigate why. Some navigators are like <table id="navbar" [done]
+- Only eliminate everything above the gallery if there're no more than 5 items. [done]
+- Bug: <p><a href="http://nowhere.org"><img src="blablah.jpg" alt="random text" /></a></p> Tag a should go inside tag div, wrap around tag svg. The whole div must be outside of p or whatever invalid place, as usual. [done]
+- Sometimes blank spaces are added into text when Sigil prettifies xhtml code which has been prettified by BeautifulSoup. [done, don't let bs prettify it]
+- Enhancement (BKE pre): better cleaning up in preview panel in edit page. [done, bkev0.6.2]
+- Bug: things go wrong with multiple galleries. [fixed, bkev0.6.2, v1.0.2]
+- Bug: <i> tag wraps outside several p and h tag. Pls insert it inside all text elements under its effect, except for h. Not exactly a bug, as that kind of usage is invalid even for html: Element p not allowed as child of element i in this context. https://www.baka-tsuki.org/project/index.php?title=Utsuro_no_Hako:Volume2_May_2 [done]
+- Pls remove text at the beginning of the original gallery. How does BTE-GEN do this? [done, with bkev0.6, v1.0.1]
+- Baka-Epub pre-processor: keep gallary image in order [done, v0.6.0]
+- Pls handle the deprecated tag <s> and <strike>. Change them to <del>. [done, v1.0.0]
+- Handle duplicate ids? [:effort:]
+- Ebook converter: pls handle image (both inline and thumb) that links to somewhere else. I haven't seen it in Baka-Tsuki, but these syntaxes work. [done, in mod v2.13, validated with Ultimate Antihero - Volume 01]
+    [[File:UnlimitedFafnir v11 008&clean.jpg|200px|link=Ultimate_Antihero:Volume_4]]
+    [[File:UnlimitedFafnir v11 008&clean.jpg|thumb|Caption text|link=Ultimate_Antihero:Volume_4]]
+    https://baka-tsuki.org/project/index.php?title=User_talk:Dreamer2908
+    Ignore the link the image pointing to, so extract filename and generate link to the file page directly? https://baka-tsuki.org/project/index.php?title=File:UnlimitedFafnir_v11_008%26clean.jpg
+- Pls add a space between volume number and 'Volume' if not exiting like The Zashiki Warashi of Intellectual Village - Volume09. [done]
+- Pls remove the navigator at the end of epub. It should be easy to detect if the table at the end is really the navigator. It can be nested tables instead of a simple table. [done]
+- Bug: blank paragraph cleaner removes even images around heading [fixed]
+- Pls alter the style of alternative readings on html from ebook converter v2.11 and later. The style is not removed so it's BT's original one. [done]
+- Pls remove blank and blank-like paragraphs at the end/begin of parts/chapters, or around images. <p><br/></p> <p><br/><br/><br/></p> [done]
+- Pls go around and clean empty div, p, span tag. [done, don't clean span for now]
+- Add fallback code for cases where PIL can't read image file [done]
+- Rotate landscape images? Don't wrap them in svg? They actually look better in simple img with 100% width than in svg. [done, don't wrap them in svg]
+- Pls strip all formatings from headings as BTE-GEN does. Note that img can be used as heading. [done]
+- Bug (ebook converter): 'Jump Up' text appears out of nowhere before cites. [done, removed .cite-accessibility-label class]
+- Bug (ebook converter): it removes the css style of ✵ in HakoMari v1. <p style="font-size:2em; text-align: center;">✵</p> -> <p>✵</p>
+    Does style removing really necessary? Keep text-align of p? [done, disabled style removal]
+- Pls remove unused image files. [effort, Sigil can do it]
+- Bug (ebook converter): If the image is not in div.thumb, but embedded as inline picture with specified width or height in image url, the script will not process it. Thus, the output will have the resize version (thumb.jpeg), not the original file. If width and height are not specified, the output will have the original file, even without any processing. [done, also removed the a tag wrapping around it]
+    https://www.baka-tsuki.org/project/index.php?title=Utsuro_no_Hako:Volume1_1st_time
+    <p><a href="/project/index.php?title=File:Utsuro_no_Hako_vol1_pic1.jpg" class="image"><img alt="Utsuro no Hako vol1 pic1.jpg" src="/project/thumb.php?f=Utsuro_no_Hako_vol1_pic1.jpg&amp;width=1000" width="1000" height="731" srcset="/project/images/4/4f/Utsuro_no_Hako_vol1_pic1.jpg 1.5x, /project/images/4/4f/Utsuro_no_Hako_vol1_pic1.jpg 2x" data-file-width="1368" data-file-height="1000" /></a></p>
+- Pls handle tag u:  <p>This is a <u>parragraph</u>.</p> -> <p>This is a <span style="text-decoration: underline;">parragraph</span>.</p> [done]
+- Pls eliminate the collapsible navigator at the end of HOv11 [done]
+- Bug: SVG goes wrong if img is wrapped inside more tag than a simgle p. [fixed]
+- Pls generate toc as well. Assign id automatically for h* ? [:effort:, Sigil ToC generator is perfect and takes only a few clicks]
+- Pls fix non-standard id, like starting with a number, containing colon, etc. [done]
+- Pls convert align attribute in p, div, span into css style.   <div align="right">—Two novelists talking shop on a certain day in 2014</div> [done]
+- Pls also remove the navigator at the end or anywhere [:effort:, it sometimes can be useful, too]
+- Pls rename the source html file into Body.xhtml. Sigil sometimes crashes (segmentation fault) on deletion. [no need, user must rename the body text into Body.xhtml before running the script]
+- Pls move illustrations to a separated page. BTE-GEN puts all images not used in Body.xhtml and Cover.xhtml into Illustrations.xhtml [done]
+- Pls find and remove the cover image from gallery. It might have a different name. [done]
+- Pls add moar meta info like "dc:language" and "dc:title". dc:title can be html title. dc:language is en, ofc. [done]
+- Use alt text of img to mark gallery image? Convert gallery text into alt text? [done]
+- Pls move up headings h3 -> h2, h2 -> h1, etc. if h1 doesn't exist. [done] Bug(?): can't find any h* in the first run. Works fine in later run. Moving the code up fixed this. God knows what actually went worng.
+- Pls make Cover.xhtml. Cover image is either Cover.jpg or Cover.png or Cover.gif. Mark it as cover, too. Check if Cover.xhtml is already created. [done]
+- Pls convert center tag into css. If center is inside p, put 'text-align: center;' into p's style and unwrap center's contents. Otherwise, convert center into div with style 'text-align: center;' [done]
+- Bug: break if image file not found, or image file id different fron filename [fixed]
+- Bug: img tag inside p tag. div not allowed inside p; put it outside. [done]
+- Pls add custom css file to epub [done]
+- Bug: html becomes invalid if the script runs on it more than one time. BeautifulSoup removes xml info from svg tags so they become invalid. [done, added codes to re-add attributes]
+- Pls remove inline css that Firefox adds to html [done]
+- Pls improve the style of alternative reading. The numbers set there are originally for Baka-Tsuki web. Alt reading (above) can be stuck to the writing (below) if they're in the first line of a page. A part of alt reading can go missing in the right border if it's too near or too long. [done, increased top placement, wrap can't be better]
+- Baka Tsuki eBook converter will strip alternative reading like [done]
+    <span style="white-space: nowrap; position: relative;"><span style="position: absolute; font-size: .8em; top: -11px; left: 50%; white-space: nowrap; letter-spacing: normal; color: inherit; font-weight: inherit; font-style: inherit;"><span style="position: relative; left: -50%;">Sorcery Armament</span></span><span style="display: inline-block; color: inherit; letter-spacing: normal; font-size: 1.0em; font-weight: inherit;">Arms</span></span>
+    into this 
+    <span><span><span>Sorcery Armament</span></span> <span>Arms</span></span>
+    Can be matched with this regex: <span>\s*?<span>\s*?<span>(.*?)</span>\s*?</span>\s*?<span>(.*?)</span>\s*?</span> (there can be a space between tags)
+    Replace with this: <span style="white-space: nowrap; position: relative;"><span style="position: absolute; font-size: .8em; top: -11px; left: 50%; white-space: nowrap; letter-spacing: normal; color: inherit; font-weight: inherit; font-style: inherit;"><span style="position: relative; left: -50%;">\1</span></span><span style="display: inline-block; color: inherit; letter-spacing: normal; font-size: 1.0em; font-weight: inherit;">\2</span></span>
+- All parsers other than xml change uppercase attributes like preserveAspectRatio to lowercase, thus creating invalid outputs. The only working option available in Sigil 0.8.6 is using xml parser and removing redudant <?xml version="1.0" encoding="utf-8"?> tags. sigil_gumbo_bs4_adapter is also an option in version 0.8.9 and later.
+- Pls remove gallery texts [done]
+- Pls eliminate <meta charset="UTF-8"/> [done]
