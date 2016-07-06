@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name        Baka-Epub pre-processor
+// @name        Baka-HTML
 // @namespace   http://localhost
 // @include     /^http[s]*?:\/\/(www\.|)baka-tsuki\.org\/project\/index\.php\?title=(.*)/
 // @include     /^http[s]*?:\/\/web\.archive\.org\/web\/\d*\/http[s]*?:\/\/(www\.|)baka-tsuki\.org\/project\/index\.php\?title=(.*)/
@@ -8,7 +8,7 @@
 // ==/UserScript==
 
 var clickMe = document.createElement("li");
-clickMe.innerHTML = '<span><a href="javascript:;" id="Baka-Epub">Baka-Epub</a></span></li>';
+clickMe.innerHTML = '<span><a href="javascript:;" id="Baka-HTML">Baka-HTML</a></span></li>';
 $('#p-views ul').append(clickMe);
 
 var title = document.title;
@@ -80,7 +80,7 @@ function dethumbnelize2(img, targetID, success) {
 	});
 };
 
-$('#Baka-Epub').click(function(){
+$('#Baka-HTML').click(function(){
 	// format the title a bit
 	title = title.replace(':', ' - ').replace(' - Baka-Tsuki', '');
 	// Pad volume number in title if existing. Note that number before the last hyphen can be a part of the title
