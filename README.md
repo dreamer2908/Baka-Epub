@@ -8,8 +8,8 @@
 
 Baka-Epub is a tool to make ePub from light novel in Baka-Tsuki. It consists of two parts:
 
-1. A user script for converting Baka-Tsuki pages into plain HTML. During that process, unwanted page elements like the layout are removed, embedded images (both inline ones and thumbnails) are replaced with the full version.
-2. A Sigil plugin for cooking the plain HTML into a proper eBook. The output will look pretty much like what the gone BTE-GEN will produce. However, there're some differences which can be either improvements or just my own preferences.
+1. Baka-HTML, a user script for converting Baka-Tsuki pages into plain HTML. During that process, unwanted page elements like the layout are removed, embedded images (both inline ones and thumbnails) are replaced with the full version.
+2. Baka-Epub, a Sigil plugin for cooking the plain HTML into a proper eBook. The output will look pretty much like what the gone BTE-GEN will produce. However, there're some differences which can be either improvements or just my own preferences.
 
 Baka-Epub is designed especially for me. So if you're not me, I recommend using [WebToEpub](https://github.com/dteviot/WebToEpub) instead.
 
@@ -17,9 +17,9 @@ For change logs, todo list, random notes, or whatever, see [baka_epub_dev_notes.
 
 ## Requirements
 
-To run Baka-Epub, you need Firefox and Greasemonkey for the user script, and Sigil version 0.9.5+ for the plugin. 
+To run Baka-HTML, you need Firefox and Greasemonkey. A different browser with a different user script manager might work, but only the listed softwares are supported. I can't test stuff on what I don't have or use.
 
-A different browser with a different user script manager and an older version of Sigil might work, but only the listed softwares are supported. I can't test stuff on what I don't have or use.
+To run Baka-Epub plugin, you need Sigil version 0.8.6+ on Linux, Python 3.4+ with BeautifulSoup4 and PIL libraries. Support for Sigil's embedded sigil_bs4 and sigil_gumbo, which will enable cross-platform support, is on the way.
 
 As of 2016-07-04, I personally use Firefox Nightly 50.0a1, Greasemonkey 3.8, and Sigil 0.9.6 on Linux Mint 17.3 64-bit. Baka-Epub are developed tested on these versions.
 
