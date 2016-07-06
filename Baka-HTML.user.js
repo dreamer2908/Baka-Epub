@@ -11,6 +11,7 @@ var clickMe = document.createElement("li");
 clickMe.innerHTML = '<span><a href="javascript:;" id="Baka-HTML">Baka-HTML</a></span></li>';
 $('#p-views ul').append(clickMe);
 
+var consolePrefix = '[Baka-HTML] '
 var title = document.title;
 var imagesToProcess = 0;
 var processedImages = 0;
@@ -19,14 +20,14 @@ function dethumbnelize(img, success)
 {
 	imagesToProcess++;
 	document.title = "Downloading images " + processedImages + "/" + imagesToProcess;
-	console.log('Image #' + imagesToProcess);
+	console.log(consolePrefix + 'Image #' + imagesToProcess);
 
 	// normally, you will be redirected to image page (/project/index.php?title=File:Imagename.jpg) if you click on the image
 	// but it's entirely possible that the image (both inline and thumb) links to somewhere else
 	// the filename in src is the same as that in image page url
 	// make sure you use relative path to support web.archive.org
 	var imgSrc = $(img).attr('src');
-	console.log('imgSrc = ' + imgSrc);
+	console.log(consolePrefix + 'imgSrc = ' + imgSrc);
 	if (imgSrc.charAt(imgSrc.length) == '/') { imgSrc = imgSrc.substring(0, imgSrc.length); }; // kill the trailing slash if any
 
 	var colonPos = imgSrc.indexOf(':');
@@ -49,12 +50,12 @@ function dethumbnelize(img, success)
 			imgPageURL = parent.attr('href');
 		};
 	};
-	console.log('imgPageURL = ' + imgPageURL);
+	console.log(consolePrefix + 'imgPageURL = ' + imgPageURL);
 	if (imgPageURL.length > 0) {
 		$.get(imgPageURL, function(data)
 		{
 			var newSrc = $(data).find('.fullImageLink > a').attr('href');
-			console.log('newSrc = ' + newSrc);
+			console.log(consolePrefix + 'newSrc = ' + newSrc);
 			success(newSrc);
 			processedImages++;
 			if (processedImages < imagesToProcess) {
@@ -108,7 +109,7 @@ $('#Baka-HTML').click(function(){
 	};
 	// remove the layout, only keep the content text
 	if ($('div.wikiEditor-preview-contents').length) {
-		console.log('Preview tab in editing page detected.');
+		console.log(consolePrefix + 'Preview tab in editing page detected.');
 		document.body.innerHTML = $('.wikiEditor-preview-contents').html(); // preview in edit page
 	} else {
 		document.body.innerHTML = $('#mw-content-text').html(); // normal
@@ -151,7 +152,7 @@ $('#Baka-HTML').click(function(){
 				newGalleryBoxImage.src = src;
 				newGalleryBoxImage.alt = '__galleryimage__'; // mark as gallery image
 				$('#__gallerybox__' + tgtID).append(newGalleryBoxImage);
-				console.log('Inserted image to __gallerybox__' + tgtID);
+				console.log(consolePrefix + 'Inserted image to __gallerybox__' + tgtID);
 			});
 		});
 		// Replace old gallery with the new one
