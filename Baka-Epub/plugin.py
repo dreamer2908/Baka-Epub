@@ -553,7 +553,7 @@ def createCoverPage(bk):
 			if coverImgID:
 				print('Found cover image %s. Creating cover page.' % coverImg)
 
-				coverText = '''<?xml version="1.0" encoding="utf-8" standalone="no"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><meta content="true" name="calibre:cover" /><title>Cover</title><style type="text/css">@page {padding: 0pt; margin:0pt}body { text-align: center; padding:0pt; margin: 0pt; }</style></head><body>''' + getSvgForImage(bk, coverImgID) + '''</body></html>'''
+				coverText = '''<?xml version="1.0" encoding="utf-8" standalone="no"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><meta content="true" name="calibre:cover" /><title>Cover</title><style type="text/css">@page {padding: 0pt; margin:0pt}body { text-align: center; padding:0pt; margin: 0pt; }</style></head><body>''' + getSvgForImage(bk, coverImgID, 100) + '''</body></html>'''
 
 				manifestID = 'Cover.xhtml'
 				baseName = manifestID
@@ -572,7 +572,7 @@ def createCoverPage(bk):
 
 				return coverImgID
 
-def getSvgForImage(bk, manifestID):
+def getSvgForImage(bk, manifestID, svgSizePercent=98):
 	from PIL import Image
 	from io import BytesIO
 
@@ -590,7 +590,7 @@ def getSvgForImage(bk, manifestID):
 			im =  Image.open(imgfile_obj)
 			width, height = im.size
 
-			template = '<div class="svg_outer svg_inner"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="100%" height="100%" viewBox="0 0 __width__ __height__" preserveAspectRatio="xMidYMid meet"><image width="__width__" height="__height__" xlink:href="__addr__"/></svg></div>'
+			template = '<div class="svg_outer svg_inner"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="%d%%" height="%d%%" viewBox="0 0 __width__ __height__" preserveAspectRatio="xMidYMid meet"><image width="__width__" height="__height__" xlink:href="__addr__"/></svg></div>' % (svgSizePercent, svgSizePercent)
 			if width > height: # do not wrap landscape images. They actually look better this way
 				template = '<div class="svg_outer svg_inner"><img alt="" src="__addr__" width="100%" /></div>'
 			imageCode = template.replace('__addr__', '../Images/' + imgName).replace('__width__', str(width)).replace('__height__', str(height))
@@ -600,6 +600,8 @@ def getSvgForImage(bk, manifestID):
 			imageCode = template.replace('__addr__', '../Images/' + imgName)
 
 		return imageCode
+	else:
+		return ''
 
 def main():
 	print ("I reached main when I should not have.\n")
