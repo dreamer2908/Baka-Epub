@@ -17,11 +17,9 @@ For change logs, todo list, random notes, or whatever, see [baka_epub_dev_notes.
 
 ## Requirements
 
-To run Baka-HTML, you need Firefox and Greasemonkey. A different browser with a different user script manager might work, but only the listed softwares are supported. I can't test stuff on what I don't have or use.
+To run Baka-HTML, you need Firefox and Greasemonkey, latest stable version recommended. A different browser with a different user script manager might work, but only the listed softwares are supported. I can't test stuff on what I don't have or use. As of 2016-07-04, I use Firefox Nightly 50.0a1 and Greasemonkey 3.8 on Linux Mint 17.3 64-bit.
 
-To run Baka-Epub plugin, you need Sigil version 0.8.6+ on Linux, Python 3.4+ with BeautifulSoup4 and PIL libraries. Support for Sigil's embedded sigil_bs4 and sigil_gumbo, which will enable cross-platform support, is on the way.
-
-As of 2016-07-04, I personally use Firefox Nightly 50.0a1, Greasemonkey 3.8, and Sigil 0.9.6 on Linux Mint 17.3 64-bit. Baka-Epub are developed tested on these versions.
+To run Baka-Epub, you need Sigil version 0.8.9 or later, latest stable version (0.9.6) recommended. The plugin makes use of the Python 3.4 interpreter, `sigil_bs4` and `sigil_gumbo` packages, which are included in Sigil 0.8.9+ by default. The plugin is tested in Sigil 0.9.6 on Linux Mint 17.3 64-bit and Sigil 0.9.5 portable on Windows 7 32-bit.
 
 ## How to use
 
