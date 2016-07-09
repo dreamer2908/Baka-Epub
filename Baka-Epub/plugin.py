@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import sys, os, re, codecs, random, string
-import bs4
-from bs4 import BeautifulSoup
+import sigil_bs4
+import sigil_gumbo_bs4_adapter as gumbo_bs4
 from PIL import Image
 from io import BytesIO
 
@@ -65,13 +65,18 @@ def run(bk):
 		# class="mw-headline" part are all removed by ebook converter
 		html = re.sub('<h(\\d)><span id="(.+?)">(.+?)</span></h(\\d)>', '<h\\1 id="\\2">\\3</h\\4>', html)
 
-		soup = BeautifulSoup(html, "xml") # must use xml as other modes don't retain upcase attribute names, thus create invalid svg codes
+		soup = gumbo_bs4.parse(html)
 
 		# remove lang="en" attribute from <html> tag (FlightCrew complains)
 		for htmlTag in soup.find_all('html'):
 			if htmlTag.get('lang') != None:
 				del htmlTag['lang']
 				plsWriteBack = True
+
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
 
 		# move up headings if necessary
 		headingLv = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7', 'h8']
@@ -89,6 +94,11 @@ def run(bk):
 				for tag in soup.find_all(headingLv[i]):
 					tag.name = headingLv[i-lvToMvUp]
 			plsWriteBack = True
+
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
 
 		# correct invalid id attributes of heading. TODO: handle links to these headings
 		idFixedCount = 0
@@ -118,6 +128,11 @@ def run(bk):
 			plsWriteBack = True
 			print('Corrected %d invalid id attribute(s).' % idFixedCount)
 
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
 		# strip all formatings from headings as BTE-GEN does
 		headingStrippedCount = 0
 		for lv in headingLv:
@@ -129,49 +144,63 @@ def run(bk):
 			plsWriteBack = True
 			print('Stripped formatings from %d headings to match BTE-GEN\'s behavior.' % headingStrippedCount)
 
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
 		# Clean up blank paragraphs next to headings and images.
 		blankParagraphsClean = 0
+		blankParagraphsToClean = []
 		for lv in headingLv:
 			for headingTag in soup.find_all(lv):
 				for paragraph in headingTag.find_next_siblings('p'):
 					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
-						paragraph.decompose()
+						blankParagraphsToClean.append(paragraph)
 						blankParagraphsClean += 1
 					else: break
 				for paragraph in headingTag.find_previous_siblings('p'):
 					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
-						paragraph.decompose()
+						blankParagraphsToClean.append(paragraph)
 						blankParagraphsClean += 1
 					else: break
 		for imgTag in soup.find_all('img'):
 			if imgTag.parent.name == 'p':
 				for paragraph in imgTag.parent.find_next_siblings('p'):
 					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
-						paragraph.decompose()
+						blankParagraphsToClean.append(paragraph)
 						blankParagraphsClean += 1
 					else: break
 				for paragraph in imgTag.parent.find_previous_siblings('p'):
 					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
-						paragraph.decompose()
+						blankParagraphsToClean.append(paragraph)
 						blankParagraphsClean += 1
 					else: break
 		for divTag in soup.find_all('div'):
 				for paragraph in divTag.find_next_siblings('p'):
 					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
-						paragraph.decompose()
+						blankParagraphsToClean.append(paragraph)
 						blankParagraphsClean += 1
 					else: break
 				for paragraph in divTag.find_previous_siblings('p'):
 					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
-						paragraph.decompose()
+						blankParagraphsToClean.append(paragraph)
 						blankParagraphsClean += 1
 					else: break
 				if len(divTag.contents) == 0:
-					divTag.decompose()
+					blankParagraphsToClean.append(divTag)
 					blankParagraphsClean += 1
 		if blankParagraphsClean > 0:
 			plsWriteBack = True
+			# print(blankParagraphsToClean)
+			for paragraph in blankParagraphsToClean:
+				paragraph.decompose()
 			print('Cleaned %d blank paragraphs next to headings and images.' % blankParagraphsClean)
+
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
 
 		# handle align attribute in p, div, span
 		tagsFixedCount = 0
@@ -188,6 +217,11 @@ def run(bk):
 		if tagsFixedCount > 0:
 			plsWriteBack = True
 			print('Converted align attribute in %d p/div/span tag(s) into css style.' % tagsFixedCount)
+
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
 
 		# handle the long deprecated center tags
 		tagsFixedCount = 0
@@ -207,6 +241,11 @@ def run(bk):
 			plsWriteBack = True
 			print('Converted %d deprecated center tag(s) into a suitable form for ePub.' % tagsFixedCount)
 
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
 		# handle the deprecated u tags
 		tagsFixedCount = 0
 		for uTag in soup.find_all('u'):
@@ -217,6 +256,11 @@ def run(bk):
 			plsWriteBack = True
 			print('Converted %d deprecated u tag(s) into a suitable form for ePub.' % tagsFixedCount)
 
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
 		# handle the invalid usage of <i> tags in HakoMari vol 2 may 2. This is due to a major error in the source page, but it can't be helped.
 		tagsFixedCount = 0
 		for iTag in soup.find_all(['i']):
@@ -224,14 +268,14 @@ def run(bk):
 			if len(illegalChild) > 0:
 				tagsFixedCount += 1
 				for child in iTag.children:
-					if type(child) == bs4.element.NavigableString:
+					if type(child) == sigil_bs4.element.NavigableString:
 						# a lot of unwanted `<p><i> </i></p>` line will be created if you wrap everything without checking
 						if str(child).strip() != '':
 							wrapper = child.wrap(soup.new_tag('i'))
 							wrapper.wrap(soup.new_tag('p'))
 					elif child.name == 'p':
 						for grandChild in child.children:
-							if type(grandChild) == bs4.element.Tag:
+							if type(grandChild) == sigil_bs4.element.Tag:
 								if grandChild.name == 'i':
 									grandChild.unwrap() # remove italic from italic text
 								else:
@@ -250,6 +294,11 @@ def run(bk):
 			plsWriteBack = True
 			print('Fixed %d range of invalid usage of <i> tag.' % tagsFixedCount)
 
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
 		# handle the deprecated tag <s> and <strike>. Use <del> instead.
 		tagsFixedCount = 0
 		for strikeTag in soup.find_all(['s', 'strike']):
@@ -258,6 +307,11 @@ def run(bk):
 		if tagsFixedCount > 0:
 			plsWriteBack = True
 			print('Converted %d deprecated <s> and <strike> tag(s) into <del> tag(s).' % tagsFixedCount)
+
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
 
 		# apply that certain customization to Baka-Tsuki's alternative reading style
 		altReadingCustomized = 0
@@ -270,6 +324,11 @@ def run(bk):
 			plsWriteBack = True
 			print('Customized Baka-Tsuki\'s style in %d alternative reading(s).' % altReadingCustomized)
 
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
 		# fix the invalid css code in the "Status: Incomplete" message
 		invalidCssCodeFixed = 0
 		for divTag in soup.find_all('div'):
@@ -280,6 +339,11 @@ def run(bk):
 		if invalidCssCodeFixed > 0:
 			plsWriteBack = True
 			print('Removed invalid CSS code in %d "Status: Incomplete" message(s).' % invalidCssCodeFixed)
+
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
 
 		# remove the navigator at the end. How to detect: the last table, containing all baka-tsuki.org links. An automatic and simple navigator should contain only a single table. A customized navigator might contain several nested tables. Kill the biggest one together with everything inside.
 		allTables = soup.find_all('table')
@@ -303,6 +367,11 @@ def run(bk):
 				if allBtLink:
 					print('Removed the unwanted navigator (table of links to main page and other volumes) at the end of main text.')
 					tableTag.decompose()
+
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
 
 		# search for gallery images first
 		for imgTag in soup.find_all('img'):
@@ -337,6 +406,11 @@ def run(bk):
 							print('Too much stuff above gallery #%s. Not gonna clean. Contents even before the gallery?' % divID)
 					divTag.decompose()
 
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
 		# wrapping img in svg
 		imgWrappedInSvg = 0
 		outOfGalleryImages = []
@@ -362,7 +436,7 @@ def run(bk):
 			imgID = bk.href_to_id(imgSrc)
 
 			if imgID: # image file exists
-				svgNode = BeautifulSoup(getSvgForImage(bk, imgID), "xml")
+				svgNode = gumbo_bs4.parse(getSvgForImage(bk, imgID))
 				# Deal with anchor wrapping around the original img tag
 				# usually <p><a href="http://somewhere.com"><img src='blabla.jpg' alt='nothing' /></a></p>
 				# copy <a> to inside <div>, outside <img> or <svg>. put svgNode outside <a> (and <p> if any)
@@ -411,6 +485,11 @@ def run(bk):
 			plsWriteBack = True
 			print('Removed %d images from the gallery because they\'re used in the body text: %r' % (len(outOfGalleryImages), [ _[0] for _ in outOfGalleryImages ]))
 
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
 		# re-add attributes removed by BeautifulSoup for no reason
 		errorsByBsCorrected = 0
 		for svgTag in soup.find_all('svg'):
@@ -428,10 +507,21 @@ def run(bk):
 			plsWriteBack = True
 			print('Corrected %d errors introduced by BeautifulSoup in svg/image tag.' % errorsByBsCorrected)
 
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
 		# re-clean empty div tags
 		for divTag in soup.find_all('div'):
 			if len(divTag.contents) == 0:
 				divTag.decompose()
+				plsWriteBack = True
+
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
 
 		# remove trash in head
 		for styleTag in soup.head.find_all('style'):
@@ -439,11 +529,22 @@ def run(bk):
 				print('Removing css style in head.')
 				styleTag.decompose()
 				plsWriteBack = True
+
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
 		for metaTag in soup.head.find_all('meta'):
 			if (metaTag.get('charset') != None):
 				print('Removing meta charset in head.')
 				metaTag.decompose()
 				plsWriteBack = True
+
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
 
 		# link stylesheets
 		cssList = ['../Styles/page_styles.css', '../Styles/stylesheet.css']
@@ -459,13 +560,15 @@ def run(bk):
 			print('Linked stylesheet %s.' % css)
 			plsWriteBack = True
 
-		# generate xhtml text. Bs creates a lot of junk xml headers, so it's better to handle the header manually
-		# html = '<?xml version="1.0" encoding="utf-8"?>' + soup.prettify().replace('<?xml version="1.0" encoding="utf-8"?>', '')
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
 		# Sigil's prettifying function tends to add needless spaces in the midle of text - tag border
 		# if the html has been already prettified by BeautifulSoup
 		# It's better to not prettify it here
-		html = str(soup)
-		html = '<?xml version="1.0" encoding="utf-8"?>' + re.sub('<\?xml\s.*?\?>', '', html)
+		html = soup.serialize_xhtml()
 
 		# handle alternative readings which have been stripped by the ebook convert script
 		html = re.sub('<span>\s*?<span>\s*?<span>(.*?)</span>\s*?</span>\s*?<span>(.*?)</span>\s*?</span>', altReadingReplace, html, flags=re.DOTALL)
@@ -474,12 +577,12 @@ def run(bk):
 			plsWriteBack = True
 
 		# write back if it is modified
-		if plsWriteBack:
-			bk.writefile(textID, html)
-		else:
-			print('Nothing changed.')
+		bk.writefile(textID, html)
 
-		bookTitle = soup.title.string.strip()
+		if soup.title.string:
+			bookTitle = soup.title.string.strip()
+		else:
+			bookTitle = ''
 
 	# find and remove cover image from gallery. It might have a different name
 	if coverImgID:
