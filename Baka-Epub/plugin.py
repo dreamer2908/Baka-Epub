@@ -8,7 +8,7 @@ from PIL import Image
 from io import BytesIO
 
 plugin_name = 'Baka-Epub'
-plugin_version = '1.0.6'
+plugin_version = '1.1.0'
 plugin_path = ''
 
 text_type = str
