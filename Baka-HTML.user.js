@@ -3,7 +3,7 @@
 // @namespace   http://localhost
 // @include     /^http[s]*?:\/\/(www\.|)baka-tsuki\.org\/project\/index\.php\?title=(.*)/
 // @include     /^http[s]*?:\/\/web\.archive\.org\/web\/\d*\/http[s]*?:\/\/(www\.|)baka-tsuki\.org\/project\/index\.php\?title=(.*)/
-// @version     0.6.4
+// @version     0.6.5
 // @grant       none
 // ==/UserScript==
 
@@ -15,6 +15,7 @@ var consolePrefix = '[Baka-HTML] '
 var title = document.title;
 var imagesToProcess = 0;
 var processedImages = 0;
+var imageArray = [];
 
 function dethumbnelize(img, success)
 {
@@ -60,8 +61,13 @@ function dethumbnelize(img, success)
 			processedImages++;
 			if (processedImages < imagesToProcess) {
 				document.title = "Downloading images " + processedImages + "/" + imagesToProcess;
+				if (imageArray.indexOf(newSrc) == -1) {
+					imageArray.push(newSrc);
+				};
 			} else {
 				document.title = title;
+				console.log(consolePrefix + 'Processed ' + imageArray.length.toString() + ' images (duplicates excluded):');
+				console.log(consolePrefix + imageArray.toString());
 			};
 		});
 	} else { // can't find the image page url
