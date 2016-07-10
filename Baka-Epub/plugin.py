@@ -91,8 +91,112 @@ def run(bk):
 	bk.setguide(guideElement)
 	bk.setspine(spineElement)
 
+	generateToC(bk, bookTitle, BookId)
+
 	print('Done.')
 	return 0
+
+def generateToC(bk, bookTitle, BookId):
+	print('Generating Table of Contents.')
+
+	def createNavPointTag(tocSoup, navPointID, playOrder, entryLabel, entrySrc, entryLevel):
+		navPointTag = tocSoup.new_tag('navPoint')
+		navPointTag['id'] = navPointID
+		navPointTag['playOrder'] = playOrder
+
+		textTag = tocSoup.new_tag('text')
+		textTag.string = entryLabel
+
+		navLabelTag = tocSoup.new_tag('navLabel')
+		navLabelTag.append(textTag)
+
+		contentTag = tocSoup.new_tag('content')
+		contentTag['src'] = entrySrc
+
+		levelTag = tocSoup.new_tag('level')
+		levelTag.string = entryLevel
+
+		navPointTag.append(navLabelTag)
+		navPointTag.append(contentTag)
+		navPointTag.append(levelTag)
+
+		return navPointTag
+
+	tocXml = '<?xml version="1.0" encoding="UTF-8"?> <!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">  <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1"> <head> <meta name="dtb:uid" content="%s"/> <meta name="dtb:depth" content="2"/> <meta name="dtb:totalPageCount" content="0"/> <meta name="dtb:maxPageNumber" content="0"/> </head> <docTitle> <text>%s</text> </docTitle> <navMap> </navMap> </ncx>' % (BookId, bookTitle)
+	tocSoup = sigil_bs4.BeautifulSoup(tocXml, 'xml')
+	navMap = tocSoup.find('navMap')
+	navID = 0
+
+	headingLv = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7', 'h8']
+	headingLvN = {'h1':1, 'h2':2, 'h3':3, 'h4':4, 'h5':5, 'h6':6, 'h7':7, 'h8':8}
+	lastTocEntry = None
+	for textFileInfo in bk.text_iter():
+		textID, textHref = textFileInfo
+
+		html = bk.readfile(textID) # Read the section into html
+		if not isinstance(html, text_type):	# If the section is not str then sets its type to 'utf-8'
+			html = text_type(html, 'utf-8')
+		soup = gumbo_bs4.parse(html)
+
+		entryInThisFile = 0
+		for headingTag in soup.find_all(headingLv):
+			# all heading in body text files should have been given their id.
+			# If one doesn't have its id, it's not in body text, so just ignore it.
+			# Don't mind text files that don't have any entry. It's not an issue (Sigil's behavior)
+			if headingTag.get('id'):
+				entryLabel = headingTag.get_text()
+				if entryInThisFile == 0: # first entry in the file should point to the beginning of the file (Sigil's behavior)
+					entrySrc = textHref
+				else:
+					entrySrc = textHref + '#' + headingTag.get('id')
+				entryLevel = headingTag.name
+				entryLevelN = headingLvN[entryLevel]
+
+				navID += 1
+				navPointID = 'navPoint-%d' % navID
+				playOrder = navID
+				navPointTag = createNavPointTag(tocSoup, navPointID, playOrder, entryLabel, entrySrc, entryLevel)
+
+				if not lastTocEntry:
+					# first entry
+					navMap.append(navPointTag)
+				else:
+					# climb the tree until you find a nav of higher level, or reach navMap
+					parentCandidate = lastTocEntry
+					parentCandidate_levelN = headingLvN[parentCandidate.find('level').string]
+					while (parentCandidate.name != 'navMap' and (entryLevelN <= parentCandidate_levelN)):
+						parentCandidate = parentCandidate.parent
+						try:
+							parentCandidate_levelN = headingLvN[parentCandidate.find('level').string]
+						except:
+							parentCandidate_levelN = 0
+					parentCandidate.append(navPointTag)
+
+				lastTocEntry = navPointTag
+				entryInThisFile += 1
+
+	# remove all level tag. it's only useful for building the tree. it's not supposed to exist in toc
+	for levelTag in navMap.find_all('level'):
+		levelTag.decompose()
+
+	# also measure toc depth
+	tocDepth = 0
+	for navPointTag in navMap.find_all('navPoint'):
+		thisDepth = 1
+		parent = navPointTag.parent
+		while parent.name != 'navMap':
+			thisDepth += 1
+			parent = parent.parent
+		if thisDepth > tocDepth:
+			tocDepth = thisDepth
+	# set tocdepth
+	for metaTag in tocSoup.find_all('meta'):
+		if metaTag.get('name') == "dtb:depth":
+			metaTag['content'] = str(tocDepth)
+
+	# print('\n\n\n\n\n')
+	# print(tocSoup)
+	bk.writefile(bk.gettocid(), tocSoup.prettify())
 
 def getUniqueManifestIdAndBasename(bk, startName):
 	rootname, extension = os.path.splitext(startName)
