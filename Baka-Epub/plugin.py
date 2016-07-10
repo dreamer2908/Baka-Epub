@@ -225,31 +225,33 @@ def processMainText(bk):
 
 		# correct invalid id attributes of heading. TODO: handle links to these headings
 		idFixedCount = 0
-		for lv in headingLv:
-			for headingTag in soup.find_all(lv):
-				headingID = headingTag.get('id')
-				fixed = False
-				if headingID != None:
-					if headingID != "".join(headingID.split()):
-						headingID = "".join(headingID.split())
-						fixed = True
-					if headingID == '':
-						headingID = '_' + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8))
-						fixed = True
-					if ':' in headingID:
-						headingID = headingID.replace(':', '_').replace(' ', '')
-						fixed = True
-					if headingID[0].isdigit() or headingID[0] == '.':
-						headingID = '_' + headingID
-						fixed = True
-				if fixed:
-					# print(headingTag)
-					# print(headingID)
-					headingTag['id'] = headingID
-					idFixedCount += 1
+		for headingTag in soup.find_all(headingLv):
+			headingID = headingTag.get('id')
+			fixed = False
+			if headingID != None:
+				if headingID != "".join(headingID.split()):
+					headingID = "".join(headingID.split())
+					fixed = True
+				if headingID == '':
+					headingID = '_' + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8))
+					fixed = True
+				if ':' in headingID:
+					headingID = headingID.replace(':', '_').replace(' ', '')
+					fixed = True
+				if headingID[0].isdigit() or headingID[0] == '.':
+					headingID = '_' + headingID
+					fixed = True
+			else: # add id to all headings
+				headingID = 'id-' + str(uuid.uuid4())
+				fixed = True
+			if fixed:
+				# print(headingTag)
+				# print(headingID)
+				headingTag['id'] = headingID
+				idFixedCount += 1
 		if idFixedCount > 0:
 			plsWriteBack = True
-			print('Corrected %d invalid id attribute(s).' % idFixedCount)
+			print('Corrected %d invalid/missing id attribute(s) in headings.' % idFixedCount)
 
 		if plsWriteBack:
 			html = soup.serialize_xhtml()
