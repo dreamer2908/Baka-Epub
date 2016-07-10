@@ -14,21 +14,39 @@
   + Single: left: &lsquo; ¡®, right: &rsquo; ¡¯
 
  [2016.06.30][modv2.14]
- [2016.07.04][bke_v0.6.4]
- [2016.07.04][bke_v0.6.4+1.0.6][passed]
+ [2016.07.10][bkh_v1.2.0]
+[bke_v1.2.0_passed]
 
-- Pls write a helper script for making epub from other sources: wrap img in svg, handle center, unwrap non-sense span, insert footnotes, join multi-line paragraph into one? [ongoing, porting changes pending]
+- Pls write a helper script for making epub from other sources: wrap img in svg, handle center, unwrap non-sense span, insert footnotes, join multi-line paragraph into one? [stalled, porting changes pending]
 - Customize epub styles?
 - Split main text into several sections?
 - Correct stupid smart quotes or just unsmarten them all? When there're a lot of quotes (speech of multiple people), dump algorithm will be confused and produce stupid quotes.
-- Inner illustration might have captions (div.thumbcaption) under it, inside the thumbnail. Do something with it? BTE-GEN doesn't and ebook coverter doesn't keep them. Example: https://www.baka-tsuki.org/project/index.php?title=Mondaiji-tachi_ga_isekai_kara_kuru_soudesu_yo:Volume_10#Short_Story . Putting <title>text</title> inside svg tag doesn't make any difference with calibre.
-- Support multiple html inputs? Reduce the number of steps?
-- Option to compress png to jpg? Option to not eliminate everything above the gallery?
-- Generate ToC as well? Sigil has that feature and it works excelently.
-- Potential problem in plugin: tag name not in lowercase
-- Move to Sigil BS4/Gumbo parser
+- Inner illustration might have captions (div.thumbcaption) under it, inside the thumbnail. Do something with it? BTE-GEN doesn't and ebook converter doesn't keep them. Example: https://www.baka-tsuki.org/project/index.php?title=Mondaiji-tachi_ga_isekai_kara_kuru_soudesu_yo:Volume_10#Short_Story . Putting <title>text</title> inside svg tag doesn't make any difference with calibre.
+- Option to compress png to jpg? Option to rotate landscape images? Option to not eliminate everything above the gallery?
+- Just keep the original text filename? This would reduce the pain.
+
 - Pls re-test previous samples to make sure no regression has appeared.
 
+- Baka-HTML: count unique images? [done]
+- Generate ToC as well? Sigil has that feature and it works excelently. [done]
+- Support multiple html inputs? Reduce the number of steps? Use image marked as cover image? Process any text file? [done, heavily restructured BKE]
+- Do not write back to body text? First, gather body, cover, illustrations; second, remove all text files; finally add the three as new files? [done, heavily restructured BKE, leave Section0001.xhtml as Sigil will crash if all existing text files are removed, even if some are added later]
+- Pls use BS4 to parse and write metadata. [done]
+- Potential problem in plugin: tag name not in lowercase [no longer, with gumbo parser]
+- Move to Sigil BS4/Gumbo parser? [done]
+  + Bug: doesn't work out-of-box with Sigil portable for Windows. But using sigil_bs4, gallery image not found or image not processed, u tag not fix, i tag not fix, etc. [fixed]
+  + Refresh the html tree apparently fixes most problems. soup = gumbo_bs4.parse(soup.serialize_xhtml())
+  + Tested samples:
+    . Ultimate Antihero - Volume 01 [2016.06.30][bkev0.5] : more blank paragraphs not cleaned. Now identical.
+    . Ultimate Antihero - Volume 03 [2016.07.04][bke_v0.6.4] : more blank paragraphs not cleaned. Now identical.
+    . Utsuro no Hako - Volume 02 [2016.07.06][bkh_v0.6.4] : identical
+    . The Unexplored Summon Blood Sign - Volume 01 [2016.06.30][bkev0.6.1] : two spaces are converted into html markup. Practically identical.
+    . Ichiban Ushiro no Daimaou - Volume 01 [2016.07.04][bkev0.6.2] : identical
+  + Issues:
+    . very slow [to be addressed later]
+    . Fewer blank paragraphs are cleaned. [fixed by making a list of nodes to decompose and only do the decomposing after scanning, result is the same as before, even though the number reported is different]
+- Improvement: set svg size to 98% (or safer, 95%) instead of 100% fixes the issue that images got split between pages in Calibre ebook viewer. [done]
+- Pls rename the user script into "Baka-HTML" [done]
 - Pls remove "Editing " or "Creating " from title in preview tab mode (&action=edit in url). [done, in v0.6.4]
 - Pls fix the invalid css code in the "Status: Incomplete" message in Ultimate_Antihero:Volume_3_Chapter_1. Even Firefox's inspector says it's invalid : `{{#ifeq: yes | yes | margin:auto;` into `/*! {{#ifeq: yes | yes | margin:auto; */` [done]
 - Pls rename the Sigil plugin [done]
