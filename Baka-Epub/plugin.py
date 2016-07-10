@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys, os, re, codecs, random, string
+import sys, os, re, codecs, random, string, uuid, io
 import sigil_bs4
 import sigil_gumbo_bs4_adapter as gumbo_bs4
 from PIL import Image
@@ -18,19 +18,136 @@ def run(bk):
 	global plugin_path
 	plugin_path = os.path.join(bk._w.plugin_dir, plugin_name)
 
-	altReadingCount = 0
-	def altReadingReplace(matchobj):
-		nonlocal altReadingCount
-		altReadingCount += 1
-		print('Correcting alternative reading: "%s" | "%s"' % (matchobj.group(1).strip(), matchobj.group(2).strip())) # note: 1 is displayed on top of 2
-		return '<span style="white-space: nowrap; position: relative;"><span style="position: absolute; font-size: .8em; top: -15px; left: 50%; white-space: nowrap; letter-spacing: normal; color: inherit; font-weight: inherit; font-style: inherit;"><span style="position: relative; left: -50%;">\1</span></span><span style="display: inline-block; color: inherit; letter-spacing: normal; font-size: 1.0em; font-weight: inherit;">\2</span></span>'.replace('\1', matchobj.group(1).strip()).replace('\2', matchobj.group(2).strip())
+	# check if css files exists. Add them if not
+	addStylesheetFiles(bk)
 
-	# Remove the default text section. Should be a xhtml file with no real content.
-	del_me_id = bk.basename_to_id('Section0001.xhtml')
-	if del_me_id:
-		print('Removing the default text section Section0001.xhtml.')
-		bk.deletefile(del_me_id)
+	# scan all text files, gather gallery images, get book title, extract and process main texts
+	mainText, galleryImages, bookTitle = processMainText(bk)
 
+	# create cover page
+	coverText, coverImgID = getCoverText(bk)
+
+	# find and remove cover image from gallery. It might have a different name
+	removeCoverImageFromGallery(bk, coverImgID, galleryImages)
+
+	# generate gallery Illustrations.xhtml
+	galleryText = getGalleryText(bk, galleryImages)
+
+	# set metadata: cover, title, language. get BookId
+	BookId = processMetadata(bk, bookTitle, coverImgID)
+
+	# remove all existing text files, except for the default text section
+	# Sigil will crash if all existing text files are removed, even if you add some later
+	textFileToKeepID = [bk.basename_to_id('Section0001.xhtml'), 'Cover.xhtml', 'Illustrations.xhtml']
+	for textFileInfo in bk.text_iter():
+		manifest_id, OPF_href = textFileInfo
+		if manifest_id not in textFileToKeepID:
+			bk.deletefile(manifest_id)
+
+	# write text files, create spine (order of text file), guide (cover text file)
+	guideElement = []
+	spineElement = []
+
+	if bk.id_to_href('Cover.xhtml', None): # write to the existing file if any
+		manifestID = 'Cover.xhtml'
+		if coverText:
+			bk.writefile(manifestID, coverText)
+		spineElement.append((manifestID, 'yes'))
+	elif coverText:
+		guideElement.append(("cover", "Cover", "Text/Cover.xhtml"))
+
+		manifestID = 'Cover.xhtml'
+		baseName = manifestID
+		mediaType = "application/xhtml+xml"
+		bk.addfile(manifestID, baseName, coverText, mediaType)
+
+		spineElement.append((manifestID, 'yes'))
+
+	if bk.id_to_href('Illustrations.xhtml', None): # write to the existing file if any
+		manifestID = 'Illustrations.xhtml'
+		if galleryText:
+			bk.writefile(manifestID, galleryText)
+		spineElement.append((manifestID, 'yes'))
+	elif galleryText:
+		manifestID = 'Illustrations.xhtml'
+		baseName = manifestID
+		mediaType = "application/xhtml+xml"
+		bk.addfile(manifestID, baseName, galleryText, mediaType)
+
+		spineElement.append((manifestID, 'yes'))
+
+	for i in range(len(mainText)):
+		text = mainText[i]
+		if i == 0:
+			manifestID = getUniqueManifestIdAndBasename(bk, 'Body.xhtml')
+		else:
+			manifestID = getUniqueManifestIdAndBasename(bk, 'Body%d.xhtml' % i)
+		baseName = manifestID
+		mediaType = "application/xhtml+xml"
+		bk.addfile(manifestID, baseName, text, mediaType)
+
+		spineElement.append((manifestID, 'yes'))
+
+	bk.setguide(guideElement)
+	bk.setspine(spineElement)
+
+	print('Done.')
+	return 0
+
+def getUniqueManifestIdAndBasename(bk, startName):
+	rootname, extension = os.path.splitext(startName)
+	uniqueName = startName
+
+	if (bk.id_to_href(uniqueName, None) or bk.basename_to_id(uniqueName, None)): # basename or id exists
+		n = 0
+		while (bk.id_to_href(uniqueName, None) or bk.basename_to_id(uniqueName, None)):
+			uniqueName = '%s_%d%s' % (rootname, n, extension)
+			n += 1
+	return uniqueName
+
+def processMetadata(bk, bookTitle, coverImgID):
+	# set metadata: cover, title, language. get BookId
+	metadata_xml = bk.getmetadataxml()
+	metadata_soup = sigil_bs4.BeautifulSoup(metadata_xml, 'xml')
+	metadata_node = metadata_soup.find('metadata')
+
+	BookId = ''
+	for node in metadata_node.find_all('identifier'):
+		if node.get('id') == "BookId":
+			BookId = node.string
+			break
+	if not BookId:
+		print('Creating a new BookID.')
+		BookId = uuid.uuid4().urn
+		id_node = metadata_soup.new_tag('dc:identifier')
+		id_node['id'] = "BookId"
+		id_node['opf:scheme'] = "UUID"
+		id_node.string = BookId
+		metadata_node.append(id_node)
+
+	for node in metadata_node.find_all(['meta', 'title', 'language']): # remove existing info
+		if not (node.name == 'meta' and node.get('name') != 'cover'):
+			node.decompose()
+
+	print('Setting metadata: title: %s, language: en.' % bookTitle)
+	title_tag = metadata_soup.new_tag('dc:title')
+	title_tag.string = bookTitle
+	metadata_node.append(title_tag)
+	lang_tag = metadata_soup.new_tag('dc:language')
+	lang_tag.string = 'en'
+	metadata_node.append(lang_tag)
+
+	if coverImgID:
+		meta_cover_tag = metadata_soup.new_tag('meta')
+		meta_cover_tag['name'] = 'cover'
+		meta_cover_tag['content'] = coverImgID
+		metadata_node.append(meta_cover_tag)
+
+	bk.setmetadataxml(str(metadata_soup))
+
+	return BookId
+
+def addStylesheetFiles(bk):
 	# check if css files exists. Add them if not
 	cssFiles = ['stylesheet.css', 'page_styles.css']
 	for cssFile in cssFiles:
@@ -45,13 +162,19 @@ def run(bk):
 			bk.addfile(manifestID, baseName, cssText, mediaType)
 			print('Added CSS file %s.' % cssFile)
 
-	# create cover page
-	coverImgID = createCoverPage(bk)
+def processMainText(bk):
+	altReadingCount = 0
+	def altReadingReplace(matchobj):
+		nonlocal altReadingCount
+		altReadingCount += 1
+		print('Correcting alternative reading: "%s" | "%s"' % (matchobj.group(1).strip(), matchobj.group(2).strip())) # note: 1 is displayed on top of 2
+		return '<span style="white-space: nowrap; position: relative;"><span style="position: absolute; font-size: .8em; top: -15px; left: 50%; white-space: nowrap; letter-spacing: normal; color: inherit; font-weight: inherit; font-style: inherit;"><span style="position: relative; left: -50%;">\1</span></span><span style="display: inline-block; color: inherit; letter-spacing: normal; font-size: 1.0em; font-weight: inherit;">\2</span></span>'.replace('\1', matchobj.group(1).strip()).replace('\2', matchobj.group(2).strip())
 
-	bookTitle = ''
+	bookTitle = 'Untitled'
 	galleryImages = []
+	mainText = []
 	for (textID, textHref) in bk.text_iter():
-		if os.path.split(textHref)[1] != 'Body.xhtml': # main text file must be named Body.xhtml
+		if os.path.split(textHref)[1] in ['Cover.xhtml', 'Section0001.xhtml', 'Illustrations.xhtml']: # main text file is anything but these
 			continue
 		print('\nProcessing text file: %s' % textHref)
 
@@ -576,14 +699,15 @@ def run(bk):
 			print('Corrected %d alternative readings.' % altReadingCount)
 			plsWriteBack = True
 
-		# write back if it is modified
-		bk.writefile(textID, html)
+		mainText.append(html)
 
 		if soup.title.string:
 			bookTitle = soup.title.string.strip()
-		else:
-			bookTitle = ''
 
+	print(' ')
+	return mainText, galleryImages, bookTitle
+
+def removeCoverImageFromGallery(bk, coverImgID, galleryImages):
 	# find and remove cover image from gallery. It might have a different name
 	if coverImgID:
 		coverimgfile = bk.readfile(coverImgID)
@@ -602,22 +726,11 @@ def run(bk):
 						print('Image file %s is identical to cover image, byte-to-byte wise. Removing from the gallery.' % tmpSrc)
 						galleryImages.remove(tmp)
 
-	# generate gallery Illustrations.xhtml
-	galleryImgID = createGalleryPage(bk, galleryImages)
+def getGalleryText(bk, galleryImages):
+	galleryImageCount = len(galleryImages)
+	galleryImageList = [ _[0] for _ in galleryImages ]
 
-	# add title and language
-	if bookTitle:
-		print('Setting metadata: title: %s, language: en.' % bookTitle)
-		metadataxml = bk.getmetadataxml().replace('<dc:title>[No data]</dc:title>','').replace('</metadata>', '<dc:title>%s</dc:title><dc:language>en</dc:language></metadata>' % bookTitle)
-		bk.setmetadataxml(metadataxml)
-
-	print('Done.')
-	return 0
-
-def createGalleryPage(bk, galleryImages):
-	if len(galleryImages) > 0:
-		print('Creating illustration gallery...')
-
+	if galleryImageCount > 0:
 		illustrationsXHTML = '''<?xml version="1.0" encoding="utf-8" standalone="no"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><title></title><link href="../Styles/stylesheet.css" rel="stylesheet" type="text/css" /><link href="../Styles/page_styles.css" rel="stylesheet" type="text/css" /></head><body>'''
 
 		for tmp in galleryImages:
@@ -631,49 +744,39 @@ def createGalleryPage(bk, galleryImages):
 				continue
 		illustrationsXHTML += '</body></html>'
 
-		manifestID = 'Illustrations.xhtml'
-		baseName = manifestID
-		mediaType = "application/xhtml+xml"
-		bk.addfile(manifestID, baseName, illustrationsXHTML, mediaType)
+		print('Created an illustration gallery with %d images: %r.' % (galleryImageCount, galleryImageList))
 
-		spine = bk.getspine()
-		newSpineEntry = (manifestID, "yes")
-		if len(spine) > 0 and spine[0][0] == 'Cover.xhtml':
-			spine.insert(1, newSpineEntry)
-		else:
-			spine.insert(0, newSpineEntry)
-		bk.setspine(spine)
+		return illustrationsXHTML
+	else:
+		print('The illustration gallery is empty. Skipped creating.')
+		return ''
 
-		print('Added gallery %s with %d images: %r.' % (manifestID, len(galleryImages), [ _[0] for _ in galleryImages ]))
+def getCoverText(bk):
+	# get cover image id from metadata
+	coverImgID = ''
+	metadata = bk.getmetadataxml()
+	stinx = sigil_bs4.BeautifulSoup(metadata, 'xml')
+	for node in stinx.find_all('meta'):
+		if node.get('name') == 'cover':
+			coverImgID = node.get('content')
+			break
+	# fail back to searching by image name
+	if not coverImgID:
+		coverImgCandidates = ['Cover.jpg', 'Cover.png', 'Cover.gif']
+		for candidate in coverImgCandidates:
+			candidateID = bk.basename_to_id(candidate, None)
+			if candidateID:
+				coverImgID = candidateID
 
-		return manifestID
+	if coverImgID:
+		coverImg = bk.id_to_href(coverImgID)
+		print('Found cover image %s.' % coverImg)
 
-def createCoverPage(bk):
-	if not bk.basename_to_id('Cover.xhtml'):
-		coverImgs = ['Cover.jpg', 'Cover.png', 'Cover.gif']
-		for coverImg in coverImgs:
-			coverImgID = bk.basename_to_id(coverImg)
-			if coverImgID:
-				print('Found cover image %s. Creating cover page.' % coverImg)
+		coverText = '''<?xml version="1.0" encoding="utf-8" standalone="no"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><meta content="true" name="calibre:cover" /><title>Cover</title><style type="text/css">@page {padding: 0pt; margin:0pt}body { text-align: center; padding:0pt; margin: 0pt; }</style></head><body>''' + getSvgForImage(bk, coverImgID, 100) + '''</body></html>'''
 
-				coverText = '''<?xml version="1.0" encoding="utf-8" standalone="no"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"  "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd"><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"><head><meta content="true" name="calibre:cover" /><title>Cover</title><style type="text/css">@page {padding: 0pt; margin:0pt}body { text-align: center; padding:0pt; margin: 0pt; }</style></head><body>''' + getSvgForImage(bk, coverImgID, 100) + '''</body></html>'''
-
-				manifestID = 'Cover.xhtml'
-				baseName = manifestID
-				mediaType = "application/xhtml+xml"
-				bk.addfile(manifestID, baseName, coverText, mediaType)
-
-				# set metadata/guide/spine for cover
-				spine = bk.getspine()
-				newSpineEntries = [(manifestID, "yes")]
-				bk.setspine(newSpineEntries + spine)
-				# bk.spine_insert_before(0, manifestID, "yes")
-				new_guide = [("cover", "Cover", "Text/Cover.xhtml")]
-				bk.setguide(new_guide)
-				metadataxml = bk.getmetadataxml().replace('</metadata>', '<meta content="%s" name="cover" /></metadata>' % coverImg)
-				bk.setmetadataxml(metadataxml)
-
-				return coverImgID
+		return coverText, coverImgID
+	else:
+		return '', ''
 
 def getSvgForImage(bk, manifestID, svgSizePercent=98):
 	from PIL import Image
