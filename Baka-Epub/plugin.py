@@ -646,6 +646,8 @@ def processMainText(bk):
 		print('Processing images in body text...')
 		for imgTag in soup.find_all('img'):
 			imgSrc = imgTag.get('src')
+			imgWidth = imgTag.get('width')
+			imgHeight = imgTag.get('height')
 			imgName = os.path.split(imgSrc)[1]
 
 			# remove the img from gallery if it's used in the body
@@ -665,7 +667,7 @@ def processMainText(bk):
 			imgID = bk.href_to_id(imgSrc)
 
 			if imgID: # image file exists
-				svgNode = gumbo_bs4.parse(getSvgForImage(bk, imgID))
+				svgNode = gumbo_bs4.parse(getSvgForImage(bk, imgID, dispWidth=imgWidth, dispHeight=imgHeight))
 				# Deal with anchor wrapping around the original img tag
 				# usually <p><a href="http://somewhere.com"><img src='blabla.jpg' alt='nothing' /></a></p>
 				# copy <a> to inside <div>, outside <img> or <svg>. put svgNode outside <a> (and <p> if any)
@@ -884,7 +886,7 @@ def getCoverText(bk):
 	else:
 		return '', ''
 
-def getSvgForImage(bk, manifestID, svgSizePercent=98):
+def getSvgForImage(bk, manifestID, svgSizePercent=98, dispWidth=None, dispHeight=None):
 	from PIL import Image
 	from io import BytesIO
 
@@ -905,6 +907,16 @@ def getSvgForImage(bk, manifestID, svgSizePercent=98):
 			template = '<div class="svg_outer svg_inner"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="%d%%" height="%d%%" viewBox="0 0 __width__ __height__" preserveAspectRatio="xMidYMid meet"><image width="__width__" height="__height__" xlink:href="__addr__"/></svg></div>' % (svgSizePercent, svgSizePercent)
 			if width > height: # do not wrap landscape images. They actually look better this way
 				template = '<div class="svg_outer svg_inner"><img alt="" src="__addr__" width="100%" /></div>'
+			if width < 400 and height < 400: # don't stretch small images
+				template = '<div class="svg_outer svg_inner"><img alt="" src="__addr__" /></div>'
+				# use the original display resolution if it's available and is even smaller
+				# note that dispWidth and dispHeight might not be pixel
+				# don't bother with something like 70%
+				if isfloat(dispWidth) and isfloat(dispHeight):
+					dispWidth = int(float(dispWidth))
+					dispHeight = int(float(dispHeight))
+					if dispWidth < width and dispHeight < height:
+						template = '<div class="svg_outer svg_inner"><img alt="" src="__addr__" width="%d" height="%d" /></div>' % (dispWidth, dispHeight)
 			imageCode = template.replace('__addr__', '../Images/' + imgName).replace('__width__', str(width)).replace('__height__', str(height))
 		except Exception as e:
 			print('Error occured when reading image file: ' + str(e))
@@ -914,6 +926,13 @@ def getSvgForImage(bk, manifestID, svgSizePercent=98):
 		return imageCode
 	else:
 		return ''
+
+def isfloat(value):
+	try:
+		float(value)
+		return True
+	except ValueError:
+		return False
 
 def main():
 	print ("I reached main when I should not have.\n")
