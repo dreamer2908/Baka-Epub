@@ -424,6 +424,7 @@ def processMainText(bk):
 		if len(blankParagraphsToClean) > 0:
 			plsWriteBack = True
 			# print(blankParagraphsToClean)
+			blankParagraphsToClean = removeDuplicateBs4Object(blankParagraphsToClean)
 			for paragraph in blankParagraphsToClean:
 				paragraph.decompose()
 			print('Cleaned %d blank paragraphs next to headings and images.' % len(blankParagraphsToClean))
@@ -935,6 +936,18 @@ def isfloat(value):
 		return True
 	except ValueError:
 		return False
+
+def removeDuplicateBs4Object(inList):
+	# see https://www.crummy.com/software/BeautifulSoup/bs4/doc/#comparing-objects-for-equality
+	outList = []
+	for bs4Obj in inList:
+		seen = False
+		for existingObj in outList:
+			if bs4Obj is existingObj:
+				seen = True
+		if not seen:
+			outList.append(bs4Obj)
+	return outList
 
 def main():
 	print ("I reached main when I should not have.\n")
