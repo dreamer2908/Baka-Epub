@@ -561,6 +561,48 @@ def processMainText(bk):
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
 
+		# remove all "Status: Incomplete" messages
+		# signatures:
+		# + <div style="width:25%; border:10px solid white; clear:both; float:right; text-align:center;">
+		# + <b>Status: Incomplete</b>
+		# + <div style="clear:both; {{#ifeq: yes | yes | margin:auto; text-align:center;">
+		removeMe = []
+		for divTag in soup.find_all('div'):
+			hasWidth25percent = False
+			hasStatusIncompleteMsg = False
+			hasFaultyCssStyle = False
+
+			styleAttr = divTag.get('style')
+			if styleAttr and ('width:25%;' in re.sub('\s', '', styleAttr)):
+				hasWidth25percent = True
+
+			bTags = divTag.find_all('b')
+			subDivTags = divTag.find_all('div')
+			for bTag in bTags:
+				if bTag.get_text().strip() == 'Status: Incomplete':
+					hasStatusIncompleteMsg = True
+					break
+
+			for subDivTag in subDivTags:
+				styleAttr = subDivTag.get('style')
+				if (styleAttr and ('{{#ifeq: yes | yes | margin:auto;' in styleAttr)):
+					hasFaultyCssStyle = True
+					break
+			if hasWidth25percent and hasStatusIncompleteMsg and hasFaultyCssStyle:
+				removeMe.append(divTag)
+
+		if len(removeMe) > 0:
+			plsWriteBack = True
+			for garbage in removeMe:
+				# print(garbage)
+				garbage.decompose()
+			print('Removed %d "Status: Incomplete" message(s).' % len(removeMe))
+
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
 		# fix the invalid css code in the "Status: Incomplete" message
 		invalidCssCodeFixed = 0
 		for divTag in soup.find_all('div'):
