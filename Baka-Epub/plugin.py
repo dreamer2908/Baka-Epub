@@ -416,6 +416,11 @@ def processMainText(bk):
 				if endTag.name == 'p' and endTag.get_text().strip() == '':
 					blankParagraphsToClean.append(endTag)
 				else: break
+		for startTag in soup.body.contents:
+			if type(startTag) == sigil_bs4.element.Tag:
+				if startTag.name == 'p' and startTag.get_text().strip() == '':
+					blankParagraphsToClean.append(startTag)
+				else: break
 		if len(blankParagraphsToClean) > 0:
 			plsWriteBack = True
 			# print(blankParagraphsToClean)
