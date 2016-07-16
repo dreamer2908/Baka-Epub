@@ -379,58 +379,49 @@ def processMainText(bk):
 			plsWriteBack = False
 
 		# Clean up blank paragraphs next to headings and images.
-		blankParagraphsClean = 0
 		blankParagraphsToClean = []
 		for lv in headingLv:
 			for headingTag in soup.find_all(lv):
 				for paragraph in headingTag.find_next_siblings('p'):
 					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
 						blankParagraphsToClean.append(paragraph)
-						blankParagraphsClean += 1
 					else: break
 				for paragraph in headingTag.find_previous_siblings('p'):
 					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
 						blankParagraphsToClean.append(paragraph)
-						blankParagraphsClean += 1
 					else: break
 		for imgTag in soup.find_all('img'):
 			if imgTag.parent.name == 'p':
 				for paragraph in imgTag.parent.find_next_siblings('p'):
 					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
 						blankParagraphsToClean.append(paragraph)
-						blankParagraphsClean += 1
 					else: break
 				for paragraph in imgTag.parent.find_previous_siblings('p'):
 					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
 						blankParagraphsToClean.append(paragraph)
-						blankParagraphsClean += 1
 					else: break
 		for divTag in soup.find_all('div'):
 				for paragraph in divTag.find_next_siblings('p'):
 					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
 						blankParagraphsToClean.append(paragraph)
-						blankParagraphsClean += 1
 					else: break
 				for paragraph in divTag.find_previous_siblings('p'):
 					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
 						blankParagraphsToClean.append(paragraph)
-						blankParagraphsClean += 1
 					else: break
 				if len(divTag.contents) == 0:
 					blankParagraphsToClean.append(divTag)
-					blankParagraphsClean += 1
 		for endTag in soup.body.contents[::-1]:
 			if type(endTag) == sigil_bs4.element.Tag:
 				if endTag.name == 'p' and endTag.get_text().strip() == '':
 					blankParagraphsToClean.append(endTag)
-					blankParagraphsClean += 1
 				else: break
-		if blankParagraphsClean > 0:
+		if len(blankParagraphsToClean) > 0:
 			plsWriteBack = True
 			# print(blankParagraphsToClean)
 			for paragraph in blankParagraphsToClean:
 				paragraph.decompose()
-			print('Cleaned %d blank paragraphs next to headings and images.' % blankParagraphsClean)
+			print('Cleaned %d blank paragraphs next to headings and images.' % len(blankParagraphsToClean))
 
 		if plsWriteBack:
 			html = soup.serialize_xhtml()
