@@ -266,6 +266,80 @@ def addStylesheetFiles(bk):
 			bk.addfile(manifestID, baseName, cssText, mediaType)
 			print('Added CSS file %s.' % cssFile)
 
+def correctDuplicateID(bk, soup):
+	# correct multiple T/N sections with identical IDs (all starts from 1) in krytykal source
+	# note: it happens to correct ALL duplicated IDs
+	# step 1: collect anchors and targets (tag having ID) with their position in the tree
+	anchors = [] # tuple of (tag, position in tree)
+	targets = [] # same as above
+	tagPosition = 0
+	for descendant in soup.body.descendants:
+		tagPosition += 1
+		if type(descendant) == sigil_bs4.element.Tag:
+			if descendant.name == 'a':
+				href = descendant.get('href')
+				if href and href.startswith('#'): # external links are outside the scope of this logic
+					anchors.append((descendant, tagPosition))
+			elif descendant.get('id') != None:
+				targets.append((descendant, tagPosition))
+	# print('anchors = %r' % anchors)
+	# print('targets = %r' % targets)
+	# step 2: put anchors and targets into groups where id and #id match. Don't care about lonesome ones
+	idGroups = {} # <id> : <list of anchors and target having that id>
+	for target in targets:
+		targetID = target[0].get('id')
+		if targetID not in idGroups:
+			idGroups[targetID] = [target]
+		else:
+			idGroups[targetID].append(target)
+	for anchor in anchors:
+		targetID = anchor[0].get('href')[1:] # remove the # at the beginning
+		if targetID not in idGroups:
+			idGroups[targetID] = [anchor]
+		else:
+			idGroups[targetID].append(anchor)
+	# step 3: sort the lists by tagPosition
+	# see http://stackoverflow.com/questions/3121979/how-to-sort-list-tuple-of-lists-tuples
+	for listOfStuff in idGroups.values():
+		listOfStuff.sort(key=lambda tup: tup[1])
+	# print(idGroups['_note-1'])
+	# step 4: slice lists into segments of a single target and its anchor(s). The target can be either first or last in its segment.
+	# the first segment of lists can keep their id. later segments must get new ids, one for each segment
+	def findSegment(myList, _id, start=0):
+		if start == len(myList) - 1: # reached the end of list
+			return start, start
+		# if the segment starts with a target, it ends before the next target or at the end of list
+		# else: it ends at the first encounting target or at the end of list
+		end = len(myList) - 1
+		foundTheEnd = False
+		for i in range(start + 1, len(myList)):
+			if myList[i][0].get('id') == _id: # anchors can have id. It's rare, but possible
+				if myList[start][0].get('id') == _id:
+					end = i - 1
+				else:
+					end = i
+				break
+		return start, end
+
+	idCorrected = 0
+	for _id in idGroups.keys():
+		idGroup = idGroups[_id]
+		firstPair = True
+		itemIndex = 0
+		while (itemIndex < len(idGroup)):
+			segStart, segEnd = findSegment(idGroup, _id, itemIndex)
+			if not firstPair:
+				idCorrected += 1
+				newID = 'id-' + str(uuid.uuid4())
+				for item in idGroup[segStart:segEnd+1]:
+					if item[0].get('id') == _id:
+						item[0]['id'] = newID
+					elif item[0].get('href') == '#' + _id:
+						item[0]['href'] = '#' + newID
+			itemIndex = segEnd + 1
+			firstPair = False
+	return idCorrected
+
 def processMainText(bk):
 	altReadingCount = 0
 	def altReadingReplace(matchobj):
@@ -358,6 +432,14 @@ def processMainText(bk):
 			print('Corrected %d invalid/missing id attribute(s) in headings.' % idFixedCount)
 
 		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
+		# correct multiple T/N sections with identical IDs (all starts from 1) in krytykal source
+		idCorrected = correctDuplicateID(bk, soup)
+		if idCorrected > 0:
+			print('Corrected %d duplicated IDs and their corresponding anchors (if any).' % idCorrected)
 			html = soup.serialize_xhtml()
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
