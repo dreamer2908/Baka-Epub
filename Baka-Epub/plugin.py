@@ -474,6 +474,29 @@ def processMainText(bk):
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
 
+		# wrap phantom <br> tag and text in <p> (krytykal source)
+		phantomWrapped = 0
+		plsWriteBack = True
+		for child in soup.body.contents:
+			if type(child) == sigil_bs4.element.NavigableString:
+				# a lot of unwanted `<p> </p>` line will be created if you wrap everything without checking
+				if str(child).strip() != '':
+					child.wrap(soup.new_tag('p'))
+					phantomWrapped += 1
+				else:
+					child.replace_with('\n') # eliminate blank phantom texts that aren't newline or true white spaces
+			elif type(child) == sigil_bs4.element.Tag:
+				if child.name in ['br']: # put phantom tags to wrap here
+					child.wrap(soup.new_tag('p'))
+					phantomWrapped += 1
+		if phantomWrapped > 0:
+			plsWriteBack = True
+			print('Wrapped %d phantom <br> tag(s) and text(s) in <p>.' % phantomWrapped)
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
 		# Clean up blank paragraphs next to headings and images.
 		blankParagraphsToClean = []
 		for lv in headingLv:
