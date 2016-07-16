@@ -175,6 +175,20 @@ def generateToC(bk, bookTitle, BookId):
 				lastTocEntry = navPointTag
 				entryInThisFile += 1
 
+	# if no heading found, add a Start entry to the first text file
+	if navID == 0:
+		for textFileInfo in bk.text_iter():
+			textID, textHref = textFileInfo
+			navID = 1
+			navPointID = 'navPoint-%d' % navID
+			playOrder = navID
+			entryLabel = 'Start'
+			entrySrc = textHref
+			entryLevel = 'h1'
+			navPointTag = createNavPointTag(tocSoup, navPointID, playOrder, entryLabel, entrySrc, entryLevel)
+			navMap.append(navPointTag)
+			break
+
 	# remove all level tag. it's only useful for building the tree. it's not supposed to exist in toc
 	for levelTag in navMap.find_all('level'):
 		levelTag.decompose()
