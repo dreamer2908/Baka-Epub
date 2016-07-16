@@ -425,7 +425,7 @@ def processMainText(bk):
 					headingID = "".join(headingID.split())
 					fixed = True
 				if headingID == '':
-					headingID = '_' + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(8))
+					headingID = 'id-' + str(uuid.uuid4())
 					fixed = True
 				if ':' in headingID:
 					headingID = headingID.replace(':', '_').replace(' ', '')
