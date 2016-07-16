@@ -641,6 +641,27 @@ def processMainText(bk):
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
 
+		# correct some attributes in <a> tag (krytykal source)
+		# name -> id
+		# data-imagelightbox and data-rel -> hell
+		tagsFixedCount = 0
+		for anchorTag in soup.find_all(['a']):
+			if anchorTag.has_attr('name'):
+				anchorTag['id'] = anchorTag['name']
+				del anchorTag['name']
+				tagsFixedCount += 1
+			if anchorTag.has_attr('data-imagelightbox') or anchorTag.has_attr('data-rel'):
+				del anchorTag['data-imagelightbox']
+				del anchorTag['data-rel']
+				tagsFixedCount += 1
+		if tagsFixedCount > 0:
+			plsWriteBack = True
+			print('Corrected %d <a> tag(s) with invalid attibute(s).' % tagsFixedCount)
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
 		# apply that certain customization to Baka-Tsuki's alternative reading style
 		altReadingCustomized = 0
 		for spanTag in soup.find_all('span'):
