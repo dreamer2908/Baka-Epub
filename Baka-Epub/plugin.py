@@ -518,12 +518,12 @@ def processMainText(bk):
 					blankParagraphsToClean.append(divTag)
 		for endTag in soup.body.contents[::-1]:
 			if type(endTag) == sigil_bs4.element.Tag:
-				if endTag.name == 'p' and endTag.get_text().strip() == '':
+				if endTag.name == 'p' and endTag.get_text().strip() == '' and len(endTag.find_all('img')) == 0:
 					blankParagraphsToClean.append(endTag)
 				else: break
 		for startTag in soup.body.contents:
 			if type(startTag) == sigil_bs4.element.Tag:
-				if startTag.name == 'p' and startTag.get_text().strip() == '':
+				if startTag.name == 'p' and startTag.get_text().strip() == '' and len(startTag.find_all('img')) == 0:
 					blankParagraphsToClean.append(startTag)
 				else: break
 		if len(blankParagraphsToClean) > 0:
