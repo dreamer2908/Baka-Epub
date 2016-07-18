@@ -280,9 +280,9 @@ def addStylesheetFiles(bk):
 			bk.addfile(manifestID, baseName, cssText, mediaType)
 			print('Added CSS file %s.' % cssFile)
 
-def correctDuplicateID(bk, soup):
-	# correct multiple T/N sections with identical IDs (all starts from 1) in krytykal source
-	# note: it happens to correct ALL duplicated IDs
+def correctDuplicateOrInvalidID(bk, soup):
+	# originally for correcting multiple T/N sections with identical IDs (all starts from 1) in krytykal source
+	# now it corrects ALL duplicated and invalid IDs
 	# step 1: collect anchors and targets (tag having ID) with their position in the tree
 	anchors = [] # tuple of (tag, position in tree)
 	targets = [] # same as above
@@ -294,7 +294,7 @@ def correctDuplicateID(bk, soup):
 				href = descendant.get('href')
 				if href and href.startswith('#'): # external links are outside the scope of this logic
 					anchors.append((descendant, tagPosition))
-			elif descendant.get('id') != None:
+			if descendant.get('id') != None: # anchor can be also a target
 				targets.append((descendant, tagPosition))
 	# print('anchors = %r' % anchors)
 	# print('targets = %r' % targets)
@@ -338,11 +338,11 @@ def correctDuplicateID(bk, soup):
 	idCorrected = 0
 	for _id in idGroups.keys():
 		idGroup = idGroups[_id]
-		firstPair = True
+		keepIdAllowed = isValidId(_id)
 		itemIndex = 0
 		while (itemIndex < len(idGroup)):
 			segStart, segEnd = findSegment(idGroup, _id, itemIndex)
-			if not firstPair:
+			if not keepIdAllowed:
 				idCorrected += 1
 				newID = 'id-' + str(uuid.uuid4())
 				for item in idGroup[segStart:segEnd+1]:
@@ -351,8 +351,13 @@ def correctDuplicateID(bk, soup):
 					elif item[0].get('href') == '#' + _id:
 						item[0]['href'] = '#' + newID
 			itemIndex = segEnd + 1
-			firstPair = False
+			keepIdAllowed = False
 	return idCorrected
+
+def isValidId(headingID):
+	if (not headingID) or (headingID != "".join(headingID.split())) or (':' in headingID) or headingID[0].isdigit() or headingID[0] == '.':
+		return False
+	return True
 
 def processMainText(bk):
 	altReadingCount = 0
@@ -415,43 +420,24 @@ def processMainText(bk):
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
 
-		# correct invalid id attributes of heading. TODO: handle links to these headings
+		# add Id to headings missing it
 		idFixedCount = 0
 		for headingTag in soup.find_all(headingLv):
-			headingID = headingTag.get('id')
-			fixed = False
-			if headingID != None:
-				if headingID != "".join(headingID.split()):
-					headingID = "".join(headingID.split())
-					fixed = True
-				if headingID == '':
-					headingID = 'id-' + str(uuid.uuid4())
-					fixed = True
-				if ':' in headingID:
-					headingID = headingID.replace(':', '_').replace(' ', '')
-					fixed = True
-				if headingID[0].isdigit() or headingID[0] == '.':
-					headingID = '_' + headingID
-					fixed = True
-			else: # add id to all headings
-				headingID = 'id-' + str(uuid.uuid4())
-				fixed = True
-			if fixed:
-				# print(headingTag)
-				# print(headingID)
-				headingTag['id'] = headingID
+			if not headingTag.get('id'):
+				headingTag['id'] = 'id-' + str(uuid.uuid4())
 				idFixedCount += 1
 		if idFixedCount > 0:
 			plsWriteBack = True
-			print('Corrected %d invalid/missing id attribute(s) in headings.' % idFixedCount)
+			print('Added ID attribute to %d heading(s).' % idFixedCount)
 
 		if plsWriteBack:
 			html = soup.serialize_xhtml()
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
 
-		# correct multiple T/N sections with identical IDs (all starts from 1) in krytykal source
-		idCorrected = correctDuplicateID(bk, soup)
+		# originally for correcting multiple T/N sections with identical IDs (all starts from 1) in krytykal source
+		# now it corrects ALL duplicated and invalid IDs
+		idCorrected = correctDuplicateOrInvalidID(bk, soup)
 		if idCorrected > 0:
 			print('Corrected %d duplicated IDs and their corresponding anchors (if any).' % idCorrected)
 			html = soup.serialize_xhtml()
