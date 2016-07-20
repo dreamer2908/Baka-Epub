@@ -1,7 +1,8 @@
 - Sigil will convert html into xhtml automatically when importing. No need to convert beforehand. [OK]
 - Sigil sometimes gives plugin the wrong file if the epub is not fresh. Recreate the file if something fishy is going on.
+- Only Firefox with Greasemonkey is recommended. Chrome with Tampermonkey runs correctly and outputs results, but when saving as html, it adds garbage (original webpage url) to internal links, i.e turning `<a href="#cite_note-1">[1]</a>` into `<a href="https://baka-tsuki.org/project/index.php?title=Ultimate_Antihero:Volume_1#cite_note-1">[1]</a>`.
 - Simple img tag with height OR width set to 100% is usually fine. SVG wrapping isn't a must, unless the display has weird ratio. <p><img alt="" src="../Images/vol_16_-_002-003.png" width="100%" /></p> usually works fine for landscape images, and <p><img alt="" src="../Images/vol_16_-_002-003.png" height="100%" /></p> usually works fine for portraint images.
-- Procedure: Open full text page -> Run ebook converter -> Save as html -> Run Sigil / New book -> Click Text -> Add existing files... -> Select the html file -> Rename it into Body.xhtml -> Add/rename cover image as Cover.jpg or Cover.png -> Run the plugin -> Optionally add meta info, clean up the remaining of the gallery, remove unused images, and do other changes -> Generate ToC -> Check & save.
+- Procedure: Open full text page -> Run ebook converter -> Save as html -> Run Sigil / New book -> Click Text -> Add existing files... -> Select the html file -> Add and mark cover image -> Run the plugin -> Optionally add meta info, remove unused images, and do other changes -> Check & save.
 - Cleanups for already saved html (or earlier than mod 2.6): 
   + Remove from <h1 id="firstHeading" xml:lang="en"><span dir="auto">Leviathan:Volume 1</span></h1> until <div dir="ltr" id="mw-content-text" xml:lang="en"> (before the gallery). That also unwraps 2 div tags which contain the whole main document.
   + Remove 2 corresponding </div> tags at the end. They're between NewPP limit report and </body></html>
@@ -13,20 +14,38 @@
   + Double: left: &ldquo; “, right: &rdquo; ”
   + Single: left: &lsquo; ‘, right: &rsquo; ’
 
- [2016.06.30][modv2.14]
- [2016.07.10][bkh_v1.2.0]
-[bke_v1.2.0_passed]
+ [2016.07.20][krytykal-to-HTML_v0.9]
+ [2016.07.20][bkh_v1.2.0]
+[bke_v1.3.0_passed]
 
 - Pls write a helper script for making epub from other sources: wrap img in svg, handle center, unwrap non-sense span, insert footnotes, join multi-line paragraph into one? [stalled, porting changes pending]
-- Customize epub styles?
+- Customize epub styles? Get some from toshiya44's stylesheet https://github.com/dteviot/WebToEpub/issues/48#issuecomment-232256060
 - Split main text into several sections?
 - Correct stupid smart quotes or just unsmarten them all? When there're a lot of quotes (speech of multiple people), dump algorithm will be confused and produce stupid quotes.
-- Inner illustration might have captions (div.thumbcaption) under it, inside the thumbnail. Do something with it? BTE-GEN doesn't and ebook converter doesn't keep them. Example: https://www.baka-tsuki.org/project/index.php?title=Mondaiji-tachi_ga_isekai_kara_kuru_soudesu_yo:Volume_10#Short_Story . Putting <title>text</title> inside svg tag doesn't make any difference with calibre.
+- Inner illustration might have captions (div.thumbcaption) under it, inside the thumbnail. Do something with it? Only when it's long or contains some specific things? BTE-GEN doesn't and ebook converter doesn't keep them. Example: https://www.baka-tsuki.org/project/index.php?title=Mondaiji-tachi_ga_isekai_kara_kuru_soudesu_yo:Volume_10#Short_Story . Putting <title>text</title> inside svg tag doesn't make any difference with calibre.
 - Option to compress png to jpg? Option to rotate landscape images? Option to not eliminate everything above the gallery?
+- Mini GUI to select options?
 - Just keep the original text filename? This would reduce the pain.
+- Allow some images to stay in the gallery even if they're used in the body text? Mark them with something?
+- Strip 'font-family:' from inline style?
+- Kill all comments in html? The answer here seems to work, but sigil_bs4 throws Exception after some loops: http://stackoverflow.com/questions/33138937/how-to-find-all-comments-with-beautiful-soup https://www.crummy.com/software/BeautifulSoup/bs4/doc/#comments-and-other-special-strings
+- More about ID fixing: multiple T/N having the same ID on the same section - Fumetsu chapter 2.
+- Remove all data-* attributes from tags. They're internal data for javascript or whatever on the page.
 
 - Pls re-test previous samples to make sure no regression has appeared.
 
+- Bugfix: <p><img> at the end/beginning of files are deleted during blank paragraph cleaning. Now they are let alone.
+- Pls also correct invalid id in T/N sections. Anchor can be also a target. [done]
+- Pls wrap phantom <br> tag and text in <p> (krytykal source) [done]
+- Pls rename attribute `name` in <a> into `id`. Also remove data-imagelightbox and data-rel attribute from <a> (krytykal source) [done]
+- Use uuid4 to generate ID for tags with empty ID attribute, instead of generating a random string. [done]
+- Bug: ToC has no <navPoint> when there's no heading. Pls add a Start point like Sigil. [done]
+- [High priority] Logic to correct multiple T/N sections with identical IDs (all starts from 1) in krytykal source [done]
+- Remove the "Sta­tus: In­com­plete" message [done]
+- Bugfix: The number of removed blank paragraphs displayed is higher than the actual number. [done]
+- Pls eliminate blank paragraphs at the beginning/end of file [done]
+- If the image is small (how small?), don't force it to be full page / full width. Import its specified width and height? Sample: Elvenblood - Volume 1 - Krytyk's translations [2016.07.13][krytykal-to-HTML_v0.4].html [done]
+- Calibre ebook converter has problems with three dots in tags if --smarten-punctuation is on. [calibre fixed this]
 - Baka-HTML: count unique images? [done]
 - Generate ToC as well? Sigil has that feature and it works excelently. [done]
 - Support multiple html inputs? Reduce the number of steps? Use image marked as cover image? Process any text file? [done, heavily restructured BKE]
@@ -111,6 +130,6 @@
     <span><span><span>Sorcery Armament</span></span> <span>Arms</span></span>
     Can be matched with this regex: <span>\s*?<span>\s*?<span>(.*?)</span>\s*?</span>\s*?<span>(.*?)</span>\s*?</span> (there can be a space between tags)
     Replace with this: <span style="white-space: nowrap; position: relative;"><span style="position: absolute; font-size: .8em; top: -11px; left: 50%; white-space: nowrap; letter-spacing: normal; color: inherit; font-weight: inherit; font-style: inherit;"><span style="position: relative; left: -50%;">\1</span></span><span style="display: inline-block; color: inherit; letter-spacing: normal; font-size: 1.0em; font-weight: inherit;">\2</span></span>
-- All parsers other than xml change uppercase attributes like preserveAspectRatio to lowercase, thus creating invalid outputs. The only working option available in Sigil 0.8.6 is using xml parser and removing redudant <?xml version="1.0" encoding="utf-8"?> tags. sigil_gumbo_bs4_adapter is also an option in version 0.8.9 and later.
+- All parsers other than xml change uppercase attributes like preserveAspectRatio to lowercase, thus creating invalid outputs. The only working option available in Sigil 0.8.6 is using xml parser and removing redudant <?xml version="1.0" encoding="utf-8"?> tags. sigil_gumbo_bs4_adapter is also an option in version 0.8.9 and later. [OK]
 - Pls remove gallery texts [done]
 - Pls eliminate <meta charset="UTF-8"/> [done]
