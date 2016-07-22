@@ -194,7 +194,7 @@ for (var i = 0; i < garbage.length; i++) {
 
 // You're done?
 // erase class attribute from some specific tags. they're no longer useful. don't touch style
-var elems = document.querySelectorAll('h1,h2,span,p');
+var elems = document.querySelectorAll('html,h1,h2,h3,h4,h5,h6,span,p');
 for (var i = 0; i < elems.length; i++) {
 	elems[i].removeAttribute("class");
 };
