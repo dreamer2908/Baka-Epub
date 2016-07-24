@@ -3,7 +3,7 @@
 // @namespace   http://localhost
 // @include     /^http[s]*?:\/\/(www\.|)baka-tsuki\.org\/project\/index\.php\?title=(.*)/
 // @include     /^http[s]*?:\/\/web\.archive\.org\/web\/\d*\/http[s]*?:\/\/(www\.|)baka-tsuki\.org\/project\/index\.php\?title=(.*)/
-// @version     1.2.0
+// @version     1.2.1
 // @grant       none
 // ==/UserScript==
 
