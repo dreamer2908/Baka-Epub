@@ -11,7 +11,7 @@ var clickMe = document.createElement("li");
 clickMe.innerHTML = '<span><a href="javascript:;" id="Baka-HTML">Baka-HTML</a></span></li>';
 $('#p-views ul').append(clickMe);
 
-var consolePrefix = '[Baka-HTML] '
+var consolePrefix = '[Baka-HTML] ';
 var title = document.title;
 var imagesToProcess = 0;
 var processedImages = 0;
@@ -29,7 +29,7 @@ function dethumbnelize(img, success)
 	// make sure you use relative path to support web.archive.org
 	var imgSrc = $(img).attr('src');
 	console.log(consolePrefix + 'imgSrc = ' + imgSrc);
-	if (imgSrc.charAt(imgSrc.length) == '/') { imgSrc = imgSrc.substring(0, imgSrc.length); }; // kill the trailing slash if any
+	if (imgSrc.charAt(imgSrc.length) == '/') { imgSrc = imgSrc.substring(0, imgSrc.length); } // kill the trailing slash if any
 
 	var colonPos = imgSrc.indexOf(':');
 	var thumbPos = imgSrc.indexOf('/project/thumb.php?f=');
@@ -49,8 +49,8 @@ function dethumbnelize(img, success)
 		var parent = img.closest('a');
 		if (parent !== null) {
 			imgPageURL = parent.attr('href');
-		};
-	};
+		}
+	}
 	console.log(consolePrefix + 'imgPageURL = ' + imgPageURL);
 	if (imgPageURL.length > 0) {
 		$.get(imgPageURL, function(data)
@@ -63,12 +63,12 @@ function dethumbnelize(img, success)
 				document.title = "Downloading images " + processedImages + "/" + imagesToProcess;
 				if (imageArray.indexOf(newSrc) == -1) {
 					imageArray.push(newSrc);
-				};
+				}
 			} else {
 				document.title = title;
 				console.log(consolePrefix + 'Processed ' + imageArray.length.toString() + ' images (duplicates excluded):');
 				console.log(consolePrefix + imageArray.toString());
-			};
+			}
 		});
 	} else { // can't find the image page url
 		success(imgSrc);
@@ -77,15 +77,15 @@ function dethumbnelize(img, success)
 			document.title = "Downloading images " + processedImages + "/" + imagesToProcess;
 		} else {
 			document.title = title;
-		};
-	};
-};
+		}
+	}
+}
 
 function dethumbnelize2(img, targetID, success) {
 	dethumbnelize(img, function(src) {
 		success(src, targetID);
 	});
-};
+}
 
 $('#Baka-HTML').click(function(){
 	// format the title a bit
@@ -103,16 +103,16 @@ $('#Baka-HTML').click(function(){
 				zero = ' ' + zero;
 			}
 			title = title.substring(0, hypPos) + titlesub.substring(0, digiPos) + zero + n + titlesub.substring(digiPos+1);
-		};
-	};
+		}
+	}
 	// remove "Editing " or "Creating " from title in preview tab mode
 	if (document.URL.indexOf('&action=edit') >= 0) {
 		if (title.indexOf('Editing ') >= 0) {
 			title = title.substring('Editing '.length);
 		} else if (title.indexOf('Creating ') >= 0) {
 			title = title.substring('Creating '.length);
-		};
-	};
+		}
+	}
 	// remove the layout, only keep the content text
 	if ($('div.wikiEditor-preview-contents').length) {
 		console.log(consolePrefix + 'Preview tab in editing page detected.');
@@ -205,7 +205,7 @@ $('#Baka-HTML').click(function(){
 					self.replaceWith(illustration);
 				}
 			});
-		};
+		}
 	});
 	// erase all class info. it's no longer useful. Do not erase style.
 	$('*').removeAttr("class");
