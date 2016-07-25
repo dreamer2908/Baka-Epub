@@ -659,13 +659,27 @@ def processMainText(bk):
 				anchorTag['id'] = anchorTag['name']
 				del anchorTag['name']
 				tagsFixedCount += 1
-			if anchorTag.has_attr('data-imagelightbox') or anchorTag.has_attr('data-rel'):
-				del anchorTag['data-imagelightbox']
-				del anchorTag['data-rel']
-				tagsFixedCount += 1
 		if tagsFixedCount > 0:
 			plsWriteBack = True
 			print('Corrected %d <a> tag(s) with invalid attibute(s).' % tagsFixedCount)
+		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
+		# remove all data-* attributes from tags
+		tagsFixedCount = 0
+		for buggyTag in soup.find_all(True):
+			attrDel = 0
+			for attr in list(buggyTag.attrs.keys()):
+				if attr.startswith('data-'):
+					del buggyTag[attr]
+					attrDel += 1
+			if attrDel > 0:
+				tagsFixedCount += 1
+		if tagsFixedCount > 0:
+			plsWriteBack = True
+			print('Removed data-* attribute(s) from %d tag(s).' % tagsFixedCount)
 		if plsWriteBack:
 			html = soup.serialize_xhtml()
 			soup = gumbo_bs4.parse(html)
