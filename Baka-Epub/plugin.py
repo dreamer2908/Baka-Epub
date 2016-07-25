@@ -439,7 +439,7 @@ def processMainText(bk):
 		# now it corrects ALL duplicated and invalid IDs
 		idCorrected = correctDuplicateOrInvalidID(bk, soup)
 		if idCorrected > 0:
-			print('Corrected %d duplicated IDs and their corresponding anchors (if any).' % idCorrected)
+			print('Corrected %d duplicated/invalid IDs and their corresponding anchors (if any).' % idCorrected)
 			html = soup.serialize_xhtml()
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
