@@ -467,17 +467,17 @@ def processMainText(bk):
 			if type(child) == sigil_bs4.element.NavigableString:
 				# a lot of unwanted `<p> </p>` line will be created if you wrap everything without checking
 				if str(child).strip() != '':
-					child.wrap(soup.new_tag('p'))
+					child.wrap(soup.new_tag('p'))['class'] = 'baka_epub_phantom_elements'
 					phantomWrapped += 1
 				else:
 					child.replace_with('\n') # eliminate blank phantom texts that aren't newline or true white spaces
 			elif type(child) == sigil_bs4.element.Tag:
-				if child.name in ['br']: # put phantom tags to wrap here
-					child.wrap(soup.new_tag('p'))
+				if child.name in ['br', 'span', 'a']: # put phantom tags to wrap here
+					child.wrap(soup.new_tag('p'))['class'] = 'baka_epub_phantom_elements'
 					phantomWrapped += 1
 		if phantomWrapped > 0:
 			plsWriteBack = True
-			print('Wrapped %d phantom <br> tag(s) and text(s) in <p>.' % phantomWrapped)
+			print('Wrapped %d phantom <br>/<span>/<a> tag(s) and text(s) in <p>.' % phantomWrapped)
 		if plsWriteBack:
 			html = soup.serialize_xhtml()
 			soup = gumbo_bs4.parse(html)
@@ -675,11 +675,14 @@ def processMainText(bk):
 				if attr.startswith('data-'):
 					del buggyTag[attr]
 					attrDel += 1
+				if attr == 'itemprop':
+					del buggyTag[attr]
+					attrDel += 1
 			if attrDel > 0:
 				tagsFixedCount += 1
 		if tagsFixedCount > 0:
 			plsWriteBack = True
-			print('Removed data-* attribute(s) from %d tag(s).' % tagsFixedCount)
+			print('Removed itemprop/data-* attribute(s) from %d tag(s).' % tagsFixedCount)
 		if plsWriteBack:
 			html = soup.serialize_xhtml()
 			soup = gumbo_bs4.parse(html)
@@ -940,16 +943,14 @@ def processMainText(bk):
 			plsWriteBack = False
 
 		# remove trash in head
-		for styleTag in soup.head.find_all('style'):
-			if (styleTag.get('type') == 'text/css'):
-				print('Removing css style in head.')
-				styleTag.decompose()
-				plsWriteBack = True
-
+		for styleTag in soup.find_all(['style', 'script', 'link', 'iframe']):
+			styleTag.decompose()
+			plsWriteBack = True
 		if plsWriteBack:
 			html = soup.serialize_xhtml()
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
+			print('Removed embedded style/script/iframe garbages.')
 
 		for metaTag in soup.head.find_all('meta'):
 			if (metaTag.get('charset') != None):
