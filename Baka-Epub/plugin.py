@@ -320,6 +320,8 @@ def correctDuplicateOrInvalidID(bk, soup):
 	# step 4: slice lists into segments of a single target and its anchor(s). The target can be either first or last in its segment.
 	# the first segment of lists can keep their id. later segments must get new ids, one for each segment
 	def findSegment(myList, _id, start=0):
+		# import pprint
+		# pprint.pprint(myList, indent=4)
 		if start == len(myList) - 1: # reached the end of list
 			return start, start
 		# if the segment starts with a target, it ends before the next target or at the end of list
@@ -333,24 +335,93 @@ def correctDuplicateOrInvalidID(bk, soup):
 				else:
 					end = i
 				break
+		# print('start = %d, end = %d' % (start, end))
 		return start, end
+
+	def splitToSegments(myList, _id):
+		# If links are at one end and targets are at the other end, mix them
+		# i.e link1 link2 target1 target2 -> link1 target1 link2 target2
+		# or target1 target2 link1 link2 -> target1 link1 target2 link2
+		# this is logical for footnotes'
+		# import pprint
+		# pprint.pprint(myList, indent=4)
+		firstTarget = -1
+		for i in range(len(myList)):
+			if myList[i][0].get('id') == _id:
+				firstTarget = i
+				break
+		lastTarget = -1
+		for i in range(len(myList)):
+			if myList[i][0].get('id') == _id:
+				lastTarget = i
+		firstLink = -1
+		for i in range(len(myList)):
+			if myList[i][0].get('href') == '#' + _id:
+				firstLink = i
+				break
+		lastLink = -1
+		for i in range(len(myList)):
+			if myList[i][0].get('href') == '#' + _id:
+				lastLink = i
+		# print('firstTarget = %d, lastTarget = %d, firstLink = %d, lastLink = %d' % (firstTarget, lastTarget, firstLink, lastLink))
+		if (firstTarget != -1 and firstLink != -1): # myList has both link and target
+			# first case, link first, target later
+			if (firstTarget == lastLink + 1):
+				# print('This case')
+				newList = []
+				iLink = 0
+				iTarget = firstTarget
+				while (iLink < firstTarget and iTarget < len(myList)):
+					newList.append(myList[iLink])
+					newList.append(myList[iTarget])
+					iLink += 1
+					iTarget += 1
+				if (iLink == firstTarget and iTarget < len(myList)):
+					newList.extend(myList[iTarget:]) # no link remain, some targets remain
+				elif (iLink < firstTarget - 1):
+					newList.extend(myList[iLink:firstTarget]) # some links remain
+				myList = newList
+			# second case, target first, link later
+			elif (firstLink == lastTarget + 1):
+				# print('That case')
+				newList = []
+				iTarget = 0
+				iLink = firstLink
+				while (iTarget < firstLink and iLink < len(myList)):
+					newList.append(myList[iTarget])
+					newList.append(myList[iLink])
+					iTarget += 1
+					iLink += 1
+				if (iTarget == firstLink and iLink < len(myList)):
+					newList.extend(myList[iLink:]) # no Target remain, some Links remain
+				elif (iTarget < firstLink - 1):
+					newList.extend(myList[iTarget:firstLink]) # some targets remain
+				myList = newList
+		# pprint.pprint(myList, indent=4)
+		# use findSegment as usual
+		itemIndex = 0
+		segments = []
+		while (itemIndex < len(myList)):
+			segStart, segEnd = findSegment(myList, _id, itemIndex)
+			segments.append(myList[segStart:segEnd+1])
+			itemIndex = segEnd + 1
+		# pprint.pprint(segments, indent=4)
+		# print(_id)
+		return segments
 
 	idCorrected = 0
 	for _id in idGroups.keys():
 		idGroup = idGroups[_id]
 		keepIdAllowed = isValidId(_id)
-		itemIndex = 0
-		while (itemIndex < len(idGroup)):
-			segStart, segEnd = findSegment(idGroup, _id, itemIndex)
+		for segment in splitToSegments(idGroup, _id):
 			if not keepIdAllowed:
 				idCorrected += 1
 				newID = 'id-' + str(uuid.uuid4())
-				for item in idGroup[segStart:segEnd+1]:
+				for item in segment:
 					if item[0].get('id') == _id:
 						item[0]['id'] = newID
 					elif item[0].get('href') == '#' + _id:
 						item[0]['href'] = '#' + newID
-			itemIndex = segEnd + 1
 			keepIdAllowed = False
 	return idCorrected
 
