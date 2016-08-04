@@ -335,6 +335,13 @@ def correctDuplicateOrInvalidID(bk, soup):
 				else:
 					end = i
 				break
+		# if there's no target in the rest of list, merge it into the last segment
+		targetRemains = 0
+		for i in range(end + 1, len(myList)):
+			if myList[i][0].get('id') == _id:
+				targetRemains += 1
+		if targetRemains == 0:
+			end = len(myList) - 1
 		# print('start = %d, end = %d' % (start, end))
 		return start, end
 
