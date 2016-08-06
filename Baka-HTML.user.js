@@ -97,13 +97,15 @@ $('#Baka-HTML').click(function(){
 	if (digiPos > 0) {
 		var r = /\d+/;
 		var n = titlesub.match(r);
-		if (n < 10 && titlesub.charAt(digiPos) !== '0') {
-			var zero = '0';
-			if (titlesub.charAt(digiPos-1) !== ' ') { // add a space before the number
-				zero = ' ' + zero;
-			}
-			title = title.substring(0, hypPos) + titlesub.substring(0, digiPos) + zero + n + titlesub.substring(digiPos+1);
+		var digiLen = n.toString().length;
+		var leadingStr = '0';
+		if (titlesub.charAt(digiPos) == '0' || n >= 10) {
+			leadingStr = '';
 		}
+		if (titlesub.charAt(digiPos-1) !== ' ') { // add a space before the number
+			leadingStr = ' ' + leadingStr;
+		}
+		title = title.substring(0, hypPos) + titlesub.substring(0, digiPos) + leadingStr + n + titlesub.substring(digiPos + digiLen);
 	}
 	// remove "Editing " or "Creating " from title in preview tab mode
 	if (document.URL.indexOf('&action=edit') >= 0) {
