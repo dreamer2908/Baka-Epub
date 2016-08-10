@@ -539,83 +539,6 @@ def processMainText(bk):
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
 
-		# Clean up blank paragraphs next to headings and images.
-		blankParagraphsToClean = []
-		for lv in headingLv:
-			for headingTag in soup.find_all(lv):
-				for paragraph in headingTag.find_next_siblings('p'):
-					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
-						blankParagraphsToClean.append(paragraph)
-					else: break
-				for paragraph in headingTag.find_previous_siblings('p'):
-					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
-						blankParagraphsToClean.append(paragraph)
-					else: break
-		for imgTag in soup.find_all('img'):
-			if imgTag.parent.name == 'p':
-				for paragraph in imgTag.parent.find_next_siblings('p'):
-					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
-						blankParagraphsToClean.append(paragraph)
-					else: break
-				for paragraph in imgTag.parent.find_previous_siblings('p'):
-					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
-						blankParagraphsToClean.append(paragraph)
-					else: break
-		for divTag in soup.find_all('div'):
-				for paragraph in divTag.find_next_siblings('p'):
-					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
-						blankParagraphsToClean.append(paragraph)
-					else: break
-				for paragraph in divTag.find_previous_siblings('p'):
-					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
-						blankParagraphsToClean.append(paragraph)
-					else: break
-				if len(divTag.contents) == 0:
-					blankParagraphsToClean.append(divTag)
-		for endTag in soup.body.contents[::-1]:
-			if type(endTag) == sigil_bs4.element.Tag:
-				if endTag.name == 'p' and endTag.get_text().strip() == '' and len(endTag.find_all('img')) == 0:
-					blankParagraphsToClean.append(endTag)
-				else: break
-		for startTag in soup.body.contents:
-			if type(startTag) == sigil_bs4.element.Tag:
-				if startTag.name == 'p' and startTag.get_text().strip() == '' and len(startTag.find_all('img')) == 0:
-					blankParagraphsToClean.append(startTag)
-				else: break
-		if len(blankParagraphsToClean) > 0:
-			plsWriteBack = True
-			# print(blankParagraphsToClean)
-			blankParagraphsToClean = removeDuplicateBs4Object(blankParagraphsToClean)
-			for paragraph in blankParagraphsToClean:
-				paragraph.decompose()
-			print('Cleaned %d blank paragraphs next to headings and images.' % len(blankParagraphsToClean))
-
-		if plsWriteBack:
-			html = soup.serialize_xhtml()
-			soup = gumbo_bs4.parse(html)
-			plsWriteBack = False
-
-		# handle align attribute in p, div, span
-		tagsFixedCount = 0
-		for pdivspanTag in soup.find_all(['p', 'div', 'span', 'caption', 'img', 'table', 'hr'] + headingLv):
-			alignAttr = pdivspanTag.get('align')
-			if alignAttr != None:
-				styleAttr = pdivspanTag.get('style')
-				if styleAttr:
-					pdivspanTag['style'] = 'text-align: %s; ' % alignAttr + styleAttr
-				else:
-					pdivspanTag['style'] = 'text-align: %s;' % alignAttr
-				del pdivspanTag['align']
-				tagsFixedCount += 1
-		if tagsFixedCount > 0:
-			plsWriteBack = True
-			print('Converted align attribute in %d p/div/span tag(s) into css style.' % tagsFixedCount)
-
-		if plsWriteBack:
-			html = soup.serialize_xhtml()
-			soup = gumbo_bs4.parse(html)
-			plsWriteBack = False
-
 		# handle the invalid usage of <i> tags in HakoMari vol 2 may 2. This is due to a major error in the source page, but it can't be helped.
 		# also stuff here https://baka-tsuki.org/project/index.php?title=User_talk:Dreamer2908
 		# ref http://www.w3schools.com/html/html_formatting.asp
@@ -786,6 +709,24 @@ def processMainText(bk):
 			plsWriteBack = True
 			print('Removed itemprop/data-* attribute(s) from %d tag(s).' % tagsFixedCount)
 		if plsWriteBack:
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
+		# handle align attribute in p, div, span
+		tagsFixedCount = 0
+		for pdivspanTag in soup.find_all(['p', 'div', 'span', 'caption', 'img', 'table', 'hr'] + headingLv):
+			alignAttr = pdivspanTag.get('align')
+			if alignAttr != None:
+				styleAttr = pdivspanTag.get('style')
+				if styleAttr:
+					pdivspanTag['style'] = 'text-align: %s; ' % alignAttr + styleAttr
+				else:
+					pdivspanTag['style'] = 'text-align: %s;' % alignAttr
+				del pdivspanTag['align']
+				tagsFixedCount += 1
+		if tagsFixedCount > 0:
+			print('Converted align attribute in %d p/div/span tag(s) into css style.' % tagsFixedCount)
 			html = soup.serialize_xhtml()
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
@@ -1033,13 +974,55 @@ def processMainText(bk):
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
 
-		# re-clean empty div tags
+		# Clean up blank paragraphs next to headings and images.
+		blankParagraphsToClean = []
+		for lv in headingLv:
+			for headingTag in soup.find_all(lv):
+				for paragraph in headingTag.find_next_siblings('p'):
+					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
+						blankParagraphsToClean.append(paragraph)
+					else: break
+				for paragraph in headingTag.find_previous_siblings('p'):
+					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
+						blankParagraphsToClean.append(paragraph)
+					else: break
+		for imgTag in soup.find_all('img'):
+			if imgTag.parent.name == 'p':
+				for paragraph in imgTag.parent.find_next_siblings('p'):
+					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
+						blankParagraphsToClean.append(paragraph)
+					else: break
+				for paragraph in imgTag.parent.find_previous_siblings('p'):
+					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
+						blankParagraphsToClean.append(paragraph)
+					else: break
 		for divTag in soup.find_all('div'):
-			if len(divTag.contents) == 0:
-				divTag.decompose()
-				plsWriteBack = True
-
-		if plsWriteBack:
+				for paragraph in divTag.find_next_siblings('p'):
+					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
+						blankParagraphsToClean.append(paragraph)
+					else: break
+				for paragraph in divTag.find_previous_siblings('p'):
+					if paragraph.get_text().strip() == '' and len(paragraph.find_all('img')) == 0:
+						blankParagraphsToClean.append(paragraph)
+					else: break
+				if len(divTag.contents) == 0:
+					blankParagraphsToClean.append(divTag)
+		for endTag in soup.body.contents[::-1]:
+			if type(endTag) == sigil_bs4.element.Tag:
+				if endTag.name == 'p' and endTag.get_text().strip() == '' and len(endTag.find_all('img')) == 0:
+					blankParagraphsToClean.append(endTag)
+				else: break
+		for startTag in soup.body.contents:
+			if type(startTag) == sigil_bs4.element.Tag:
+				if startTag.name == 'p' and startTag.get_text().strip() == '' and len(startTag.find_all('img')) == 0:
+					blankParagraphsToClean.append(startTag)
+				else: break
+		if len(blankParagraphsToClean) > 0:
+			# print(blankParagraphsToClean)
+			blankParagraphsToClean = removeDuplicateBs4Object(blankParagraphsToClean)
+			for paragraph in blankParagraphsToClean:
+				paragraph.decompose()
+			print('Cleaned %d blank paragraphs next to headings and images.' % len(blankParagraphsToClean))
 			html = soup.serialize_xhtml()
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
