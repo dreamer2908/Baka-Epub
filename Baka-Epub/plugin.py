@@ -526,8 +526,9 @@ def processMainText(bk):
 		headingStrippedCount = 0
 		for lv in headingLv:
 			for headingTag in soup.find_all(lv):
-				if len(headingTag.find_all('img')) == 0:
+				if len(headingTag.find_all('img')) == 0 and (len(headingTag.find_all(True)) > 0 or headingTag.get('style')):
 					headingTag.string = headingTag.get_text()
+					del headingTag['style']
 					headingStrippedCount += 1
 		if headingStrippedCount > 0:
 			plsWriteBack = True
