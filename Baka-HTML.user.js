@@ -116,11 +116,15 @@ $('#Baka-HTML').click(function(){
 		}
 	}
 	// remove the layout, only keep the content text
-	if ($('div.wikiEditor-preview-contents').length) {
+	if ($('div.wikiEditor-preview-contents').length > 0) {
 		console.log(consolePrefix + 'Preview tab in editing page detected.');
 		document.body.innerHTML = $('.wikiEditor-preview-contents').html(); // preview in edit page
-	} else {
+	} else if ($('#mw-content-text').length > 0) {
+		console.log(consolePrefix + 'Normal page detected.');
 		document.body.innerHTML = $('#mw-content-text').html(); // normal
+	} else {
+		console.log(consolePrefix + "Contents not detected. You're running me on the wrong page.");
+		alert(consolePrefix + "Contents not detected. You're running me on the wrong page.");
 	}
 	// remove a lot of needless page elements
 	// .cite-accessibility-label is the "Jump Up" text that pops out of nowhere in notes when saving page
