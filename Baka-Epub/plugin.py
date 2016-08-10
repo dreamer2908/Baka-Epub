@@ -538,7 +538,7 @@ def processMainText(bk):
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
 
-		# wrap phantom <br> tag and text in <p> (krytykal source)
+		# wrap phantom (direct decendant of body) <br>/<span>/<a>, text formatting tags and text in <p> (krytykal/skythewood/imoutolicious source)
 		phantomWrapped = 0
 		plsWriteBack = True
 		for child in soup.body.contents:
@@ -550,12 +550,12 @@ def processMainText(bk):
 				else:
 					child.replace_with('\n') # eliminate blank phantom texts that aren't newline or true white spaces
 			elif type(child) == sigil_bs4.element.Tag:
-				if child.name in ['br', 'span', 'a']: # put phantom tags to wrap here
+				if child.name in ['br', 'span', 'a', 'b', 'strong', 'i', 'em', 'big', 'small', 'mark', 's', 'strike', 'del', 'ins', 'sub', 'sup', 'u']: # put phantom tags to wrap here
 					child.wrap(soup.new_tag('p'))['class'] = 'baka_epub_phantom_elements'
 					phantomWrapped += 1
 		if phantomWrapped > 0:
 			plsWriteBack = True
-			print('Wrapped %d phantom <br>/<span>/<a> tag(s) and text(s) in <p>.' % phantomWrapped)
+			print('Wrapped %d phantom <br>/<span>/<a>, text formatting tags and texts in <p>.' % phantomWrapped)
 		if plsWriteBack:
 			html = soup.serialize_xhtml()
 			soup = gumbo_bs4.parse(html)
