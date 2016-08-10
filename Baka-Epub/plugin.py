@@ -671,6 +671,7 @@ def processMainText(bk):
 
 		# wrap phantom (direct decendant of body) <br>/<span>/<a>, text formatting tags and text in <p> (krytykal/skythewood/imoutolicious source)
 		phantomWrapped = 0
+		removeMe = []
 		plsWriteBack = True
 		for child in soup.body.contents:
 			if type(child) == sigil_bs4.element.NavigableString:
@@ -681,13 +682,20 @@ def processMainText(bk):
 				else:
 					child.replace_with('\n') # eliminate blank phantom texts that aren't newline or true white spaces
 			elif type(child) == sigil_bs4.element.Tag:
-				if child.name in ['br', 'span', 'a', 'b', 'strong', 'i', 'em', 'big', 'small', 'mark', 's', 'strike', 'del', 'ins', 'sub', 'sup', 'u']: # put phantom tags to wrap here
+				if child.name in ['br', 'a']:
 					child.wrap(soup.new_tag('p'))['class'] = 'baka_epub_phantom_elements'
 					phantomWrapped += 1
+				elif child.name in ['span', 'b', 'strong', 'i', 'em', 'big', 'small', 'mark', 's', 'strike', 'del', 'ins', 'sub', 'sup', 'u']:
+					# for these, check if they have some contents. remove if no
+					if (len(child.get_text().strip()) > 0 or len(child.find_all(True)) > 0):
+						child.wrap(soup.new_tag('p'))['class'] = 'baka_epub_phantom_elements'
+					else:
+						removeMe.append(child)
+					phantomWrapped += 1
 		if phantomWrapped > 0:
-			plsWriteBack = True
+			for element in removeMe:
+				element.decompose()
 			print('Wrapped %d phantom <br>/<span>/<a>, text formatting tags and texts in <p>.' % phantomWrapped)
-		if plsWriteBack:
 			html = soup.serialize_xhtml()
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
