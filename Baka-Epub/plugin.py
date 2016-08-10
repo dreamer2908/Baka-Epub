@@ -538,29 +538,6 @@ def processMainText(bk):
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
 
-		# wrap phantom (direct decendant of body) <br>/<span>/<a>, text formatting tags and text in <p> (krytykal/skythewood/imoutolicious source)
-		phantomWrapped = 0
-		plsWriteBack = True
-		for child in soup.body.contents:
-			if type(child) == sigil_bs4.element.NavigableString:
-				# a lot of unwanted `<p> </p>` line will be created if you wrap everything without checking
-				if str(child).strip() != '':
-					child.wrap(soup.new_tag('p'))['class'] = 'baka_epub_phantom_elements'
-					phantomWrapped += 1
-				else:
-					child.replace_with('\n') # eliminate blank phantom texts that aren't newline or true white spaces
-			elif type(child) == sigil_bs4.element.Tag:
-				if child.name in ['br', 'span', 'a', 'b', 'strong', 'i', 'em', 'big', 'small', 'mark', 's', 'strike', 'del', 'ins', 'sub', 'sup', 'u']: # put phantom tags to wrap here
-					child.wrap(soup.new_tag('p'))['class'] = 'baka_epub_phantom_elements'
-					phantomWrapped += 1
-		if phantomWrapped > 0:
-			plsWriteBack = True
-			print('Wrapped %d phantom <br>/<span>/<a>, text formatting tags and texts in <p>.' % phantomWrapped)
-		if plsWriteBack:
-			html = soup.serialize_xhtml()
-			soup = gumbo_bs4.parse(html)
-			plsWriteBack = False
-
 		# Clean up blank paragraphs next to headings and images.
 		blankParagraphsToClean = []
 		for lv in headingLv:
@@ -687,6 +664,29 @@ def processMainText(bk):
 
 		if tagsFixedCount > 0:
 			print('Fixed %d range of invalid usage of text formatting tags (i/b/u/etc.)' % tagsFixedCount)
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
+		# wrap phantom (direct decendant of body) <br>/<span>/<a>, text formatting tags and text in <p> (krytykal/skythewood/imoutolicious source)
+		phantomWrapped = 0
+		plsWriteBack = True
+		for child in soup.body.contents:
+			if type(child) == sigil_bs4.element.NavigableString:
+				# a lot of unwanted `<p> </p>` line will be created if you wrap everything without checking
+				if str(child).strip() != '':
+					child.wrap(soup.new_tag('p'))['class'] = 'baka_epub_phantom_elements'
+					phantomWrapped += 1
+				else:
+					child.replace_with('\n') # eliminate blank phantom texts that aren't newline or true white spaces
+			elif type(child) == sigil_bs4.element.Tag:
+				if child.name in ['br', 'span', 'a', 'b', 'strong', 'i', 'em', 'big', 'small', 'mark', 's', 'strike', 'del', 'ins', 'sub', 'sup', 'u']: # put phantom tags to wrap here
+					child.wrap(soup.new_tag('p'))['class'] = 'baka_epub_phantom_elements'
+					phantomWrapped += 1
+		if phantomWrapped > 0:
+			plsWriteBack = True
+			print('Wrapped %d phantom <br>/<span>/<a>, text formatting tags and texts in <p>.' % phantomWrapped)
+		if plsWriteBack:
 			html = soup.serialize_xhtml()
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
