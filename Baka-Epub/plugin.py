@@ -638,6 +638,59 @@ def processMainText(bk):
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
 
+		# handle the invalid usage of <i> tags in HakoMari vol 2 may 2. This is due to a major error in the source page, but it can't be helped.
+		# also stuff here https://baka-tsuki.org/project/index.php?title=User_talk:Dreamer2908
+		# ref http://www.w3schools.com/html/html_formatting.asp
+		tagsFixedCount = 0
+		tag2Css =  {
+					'b':'font-weight: bold;',
+					'strong':'font-weight: bold;',
+					'i':'font-style: italic;',
+					'em':'font-style: italic;',
+					'big':'font-size: large',
+					'small':'font-size: smaller',
+					'mark':'background-color: yellow; color: black;',
+					's':'text-decoration: line-through;',
+					'strike':'text-decoration: line-through;',
+					'del':'text-decoration: line-through;',
+					'ins':'text-decoration: underline;',
+					'sub':'vertical-align: sub; font-size: smaller;',
+					'sup':'vertical-align: super; font-size: smaller;',
+					'u':'text-decoration: underline;',
+					}
+		for iTag in soup.find_all(['b', 'strong', 'i', 'em', 'big', 'small', 'mark', 's', 'strike', 'del', 'ins', 'sub', 'sup', 'u']):
+			illegalChild = iTag.find_all(['p', 'div', 'table', 'blockquote', 'pre', 'caption', 'dl', 'hr', 'section', 'ul', 'ol'] + headingLv)
+			if len(illegalChild) > 0:
+				tagsFixedCount += 1
+				for child in iTag.children:
+					if type(child) == sigil_bs4.element.NavigableString:
+						# a lot of unwanted `<p><i> </i></p>` line will be created if you wrap everything without checking
+						if str(child).strip() != '':
+							wrapper = child.wrap(soup.new_tag(iTag.name))
+							wrapper.wrap(soup.new_tag('p'))
+					elif child.name == 'p':
+						for grandChild in child.children:
+							if type(grandChild) == sigil_bs4.element.Tag:
+								if grandChild.name == iTag.name:
+									grandChild.unwrap() # remove italic from italic text
+								else:
+									grandChild.wrap(soup.new_tag(iTag.name))
+							else:
+								grandChild.wrap(soup.new_tag(iTag.name))
+					elif child.name not in headingLv: # skip styling headings
+						styleAttr = child.get('style')
+						if styleAttr:
+							child['style'] = tag2Css[iTag.name] + styleAttr
+						else:
+							child['style'] = tag2Css[iTag.name]
+				iTag.unwrap()
+
+		if tagsFixedCount > 0:
+			print('Fixed %d range of invalid usage of text formatting tags (i/b/u/etc.)' % tagsFixedCount)
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
 		# handle the long deprecated center tags
 		tagsFixedCount = 0
 		for centerTag in soup.find_all('center'):
@@ -670,44 +723,6 @@ def processMainText(bk):
 		if tagsFixedCount > 0:
 			plsWriteBack = True
 			print('Converted %d deprecated u tag(s) into a suitable form for ePub.' % tagsFixedCount)
-
-		if plsWriteBack:
-			html = soup.serialize_xhtml()
-			soup = gumbo_bs4.parse(html)
-			plsWriteBack = False
-
-		# handle the invalid usage of <i> tags in HakoMari vol 2 may 2. This is due to a major error in the source page, but it can't be helped.
-		tagsFixedCount = 0
-		for iTag in soup.find_all(['i']):
-			illegalChild = iTag.find_all('p')
-			if len(illegalChild) > 0:
-				tagsFixedCount += 1
-				for child in iTag.children:
-					if type(child) == sigil_bs4.element.NavigableString:
-						# a lot of unwanted `<p><i> </i></p>` line will be created if you wrap everything without checking
-						if str(child).strip() != '':
-							wrapper = child.wrap(soup.new_tag('i'))
-							wrapper.wrap(soup.new_tag('p'))
-					elif child.name == 'p':
-						for grandChild in child.children:
-							if type(grandChild) == sigil_bs4.element.Tag:
-								if grandChild.name == 'i':
-									grandChild.unwrap() # remove italic from italic text
-								else:
-									grandChild.wrap(soup.new_tag("i"))
-							else:
-								grandChild.wrap(soup.new_tag("i"))
-					elif child.name not in headingLv: # skip styling headings
-						styleAttr = child.get('style')
-						if styleAttr:
-							child['style'] = 'font-style: italic; ' + styleAttr
-						else:
-							child['style'] = 'font-style: italic;'
-				iTag.unwrap()
-
-		if tagsFixedCount > 0:
-			plsWriteBack = True
-			print('Fixed %d range of invalid usage of <i> tag.' % tagsFixedCount)
 
 		if plsWriteBack:
 			html = soup.serialize_xhtml()
