@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys, os, re, codecs, random, string, uuid, io
+import sys, os, re, codecs, random, string, uuid, io, urllib
 import sigil_bs4
 import sigil_gumbo_bs4_adapter as gumbo_bs4
 from PIL import Image
@@ -886,7 +886,7 @@ def processMainText(bk):
 
 		# search for gallery images first
 		for imgTag in soup.find_all('img'):
-			imgSrc = imgTag.get('src')
+			imgSrc = urllib.parse.unquote(imgTag.get('src'))
 			imgAlt = imgTag.get('alt')
 			imgName = os.path.split(imgSrc)[1]
 
@@ -927,7 +927,7 @@ def processMainText(bk):
 		outOfGalleryImages = []
 		print('Processing images in body text...')
 		for imgTag in soup.find_all('img'):
-			imgSrc = imgTag.get('src')
+			imgSrc = urllib.parse.unquote(imgTag.get('src'))
 			imgWidth = imgTag.get('width')
 			imgHeight = imgTag.get('height')
 			imgName = os.path.split(imgSrc)[1]
@@ -1175,7 +1175,7 @@ def getSvgForImage(bk, manifestID, svgSizePercent=98, dispWidth=None, dispHeight
 	href = bk.id_to_href(manifestID)
 
 	if manifestID and href: # id is specified and confirmed to exist
-		imgName = os.path.split(href)[1]
+		imgName = urllib.parse.quote(os.path.split(href)[1])
 
 		imgfile = bk.readfile(manifestID)
 		imgfile_obj = BytesIO(imgfile)
