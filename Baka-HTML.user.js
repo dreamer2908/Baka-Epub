@@ -209,8 +209,8 @@ $('#Baka-HTML').click(function(){
 			});
 		}
 	});
-	// erase all class info. it's no longer useful. Do not erase style.
-	$('*').removeAttr("class");
+	// erase all class info. it's no longer useful, except in table. Do not erase style.
+	$('*').not('table').removeAttr("class");
 	// Only keep the title in the header. Note: When saving the html, the browser might add some css junk. That can be handled later.
 	document.head.innerHTML = '<title>' + title + '</title>';
 	// remove contextmenu attribute from body
