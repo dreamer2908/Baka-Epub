@@ -714,7 +714,7 @@ def processMainText(bk):
 
 		# handle align attribute in p, div, span
 		tagsFixedCount = 0
-		for pdivspanTag in soup.find_all(['p', 'div', 'span', 'caption', 'img', 'table', 'hr'] + headingLv):
+		for pdivspanTag in soup.find_all(['p', 'div', 'span', 'caption', 'img', 'table'] + headingLv):
 			alignAttr = pdivspanTag.get('align')
 			if alignAttr != None:
 				styleAttr = pdivspanTag.get('style')
@@ -726,6 +726,22 @@ def processMainText(bk):
 				tagsFixedCount += 1
 		if tagsFixedCount > 0:
 			print('Converted align attribute in %d p/div/span tag(s) into css style.' % tagsFixedCount)
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
+		# remove  align/noshade/size/width attributes from <hr> tags
+		tagsFixedCount = 0
+		for buggyTag in soup.find_all('hr'):
+			attrDel = 0
+			for attr in list(buggyTag.attrs.keys()):
+				if attr in ['align', 'noshade', 'size', 'width']:
+					del buggyTag[attr]
+					attrDel += 1
+			if attrDel > 0:
+				tagsFixedCount += 1
+		if tagsFixedCount > 0:
+			print('Removed all deprecated attributes from %d <hr> tag(s).' % tagsFixedCount)
 			html = soup.serialize_xhtml()
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
