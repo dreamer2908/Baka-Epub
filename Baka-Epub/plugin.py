@@ -444,6 +444,11 @@ def processMainText(bk):
 		altReadingCount += 1
 		print('Correcting alternative reading: "%s" | "%s"' % (matchobj.group(1).strip(), matchobj.group(2).strip())) # note: 1 is displayed on top of 2
 		return '<span style="white-space: nowrap; position: relative;"><span style="position: absolute; font-size: .8em; top: -15px; left: 50%; white-space: nowrap; letter-spacing: normal; color: inherit; font-weight: inherit; font-style: inherit;"><span style="position: relative; left: -50%;">\1</span></span><span style="display: inline-block; color: inherit; letter-spacing: normal; font-size: 1.0em; font-weight: inherit;">\2</span></span>'.replace('\1', matchobj.group(1).strip()).replace('\2', matchobj.group(2).strip())
+	def altReadingReplaceRuby(matchobj):
+		nonlocal altReadingCount
+		altReadingCount += 1
+		print('Converting alternative reading: "%s" | "%s"' % (matchobj.group(1).strip(), matchobj.group(2).strip())) # note: 2 is displayed on top of 1
+		return '<span style="white-space: nowrap; position: relative;"><span style="position: absolute; font-size: .8em; top: -15px; left: 50%; white-space: nowrap; letter-spacing: normal; color: inherit; font-weight: inherit; font-style: inherit;"><span style="position: relative; left: -50%;">\2</span></span><span style="display: inline-block; color: inherit; letter-spacing: normal; font-size: 1.0em; font-weight: inherit;">\1</span></span>'.replace('\1', matchobj.group(1).strip()).replace('\2', matchobj.group(2).strip())
 
 	bookTitle = 'Untitled'
 	galleryImages = []
@@ -1092,6 +1097,13 @@ def processMainText(bk):
 		if altReadingCount > 0:
 			print('Corrected %d alternative readings.' % altReadingCount)
 			plsWriteBack = True
+
+		# convert ruby tags in yukkuri-literature-service into baka-tsuki-like alternative reading
+		# <ruby>Court Magician<rp>(</rp><rt>Civil Servant</rt><rp>)</rp></ruby>
+		altReadingCount = 0
+		html = re.sub('<ruby>(.*?)\s*<rp>\s*\(\s*</rp>\s*<rt>(.*?)</rt>\s*<rp>\s*\)\s*</rp>\s*</ruby>', altReadingReplaceRuby, html, flags=re.DOTALL)
+		if altReadingCount > 0:
+			print('Converted %d ruby furigana into Baka-Tsuki-like alternative reading(s).' % altReadingCount)
 
 		mainText.append(html)
 
