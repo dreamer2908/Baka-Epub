@@ -839,7 +839,7 @@ def processMainText(bk):
 			imgAlt = imgTag.get('alt')
 			imgName = os.path.split(imgSrc)[1]
 
-			if imgAlt.startswith('__galleryimage__'):
+			if imgAlt and imgAlt.startswith('__galleryimage__'):
 				# print('Found gallery image: %s' % imgName)
 				imgInGallery = [ _[0] for _ in galleryImages ]
 				if imgSrc not in imgInGallery:
