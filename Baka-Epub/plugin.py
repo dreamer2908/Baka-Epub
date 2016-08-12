@@ -513,6 +513,19 @@ def processMainText(bk):
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
 
+		# convert name attribute into id in <a> tag
+		tagsFixedCount = 0
+		for anchorTag in soup.find_all(['a']):
+			if anchorTag.has_attr('name'):
+				anchorTag['id'] = anchorTag['name']
+				del anchorTag['name']
+				tagsFixedCount += 1
+		if tagsFixedCount > 0:
+			print('Converted %d `name` attribute into `id` in <a> tag(s).' % tagsFixedCount)
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
 		# originally for correcting multiple T/N sections with identical IDs (all starts from 1) in krytykal source
 		# now it corrects ALL duplicated and invalid IDs
 		idCorrected = correctDuplicateOrInvalidID(bk, soup)
@@ -670,23 +683,6 @@ def processMainText(bk):
 			plsWriteBack = True
 			print('Converted %d deprecated <s> and <strike> tag(s) into <del> tag(s).' % tagsFixedCount)
 
-		if plsWriteBack:
-			html = soup.serialize_xhtml()
-			soup = gumbo_bs4.parse(html)
-			plsWriteBack = False
-
-		# correct some attributes in <a> tag (krytykal source)
-		# name -> id
-		# data-imagelightbox and data-rel -> hell
-		tagsFixedCount = 0
-		for anchorTag in soup.find_all(['a']):
-			if anchorTag.has_attr('name'):
-				anchorTag['id'] = anchorTag['name']
-				del anchorTag['name']
-				tagsFixedCount += 1
-		if tagsFixedCount > 0:
-			plsWriteBack = True
-			print('Corrected %d <a> tag(s) with invalid attibute(s).' % tagsFixedCount)
 		if plsWriteBack:
 			html = soup.serialize_xhtml()
 			soup = gumbo_bs4.parse(html)
