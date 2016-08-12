@@ -751,6 +751,24 @@ def processMainText(bk):
 			soup = gumbo_bs4.parse(html)
 			plsWriteBack = False
 
+		# remove all but global attribute from br tag
+		# event attributes are allowed, but there's no point in such attributes in epub
+		globalAttributes = ['accesskey', 'class', 'contenteditable', 'contextmenu', 'dir', 'draggable', 'dropzone', 'hidden', 'id', 'lang', 'spellcheck', 'style', 'tabindex', 'title', 'translate']
+		tagsFixedCount = 0
+		for buggyTag in soup.find_all('br'):
+			attrDel = 0
+			for attr in list(buggyTag.attrs.keys()):
+				if attr not in globalAttributes:
+					del buggyTag[attr]
+					attrDel += 1
+			if attrDel > 0:
+				tagsFixedCount += 1
+		if tagsFixedCount > 0:
+			print('Removed all invalid attributes from %d <br> tag(s).' % tagsFixedCount)
+			html = soup.serialize_xhtml()
+			soup = gumbo_bs4.parse(html)
+			plsWriteBack = False
+
 		# apply that certain customization to Baka-Tsuki's alternative reading style
 		altReadingCustomized = 0
 		for spanTag in soup.find_all('span'):
