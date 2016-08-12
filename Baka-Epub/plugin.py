@@ -696,14 +696,17 @@ def processMainText(bk):
 				if attr.startswith('data-'):
 					del buggyTag[attr]
 					attrDel += 1
-				if attr == 'itemprop':
+				elif attr == 'itemprop':
+					del buggyTag[attr]
+					attrDel += 1
+				elif attr == 'target':
 					del buggyTag[attr]
 					attrDel += 1
 			if attrDel > 0:
 				tagsFixedCount += 1
 		if tagsFixedCount > 0:
 			plsWriteBack = True
-			print('Removed itemprop/data-* attribute(s) from %d tag(s).' % tagsFixedCount)
+			print('Removed itemprop/data-*/target attribute(s) from %d tag(s).' % tagsFixedCount)
 		if plsWriteBack:
 			html = soup.serialize_xhtml()
 			soup = gumbo_bs4.parse(html)
