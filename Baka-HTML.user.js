@@ -158,14 +158,21 @@ $('#Baka-HTML').click(function(){
 			var targetID = galleryID.toString() + '_' + imageID.toString();
 			newGalleryBox.id = '__gallerybox__' + targetID;
 			newGallery.appendChild(newGalleryBox);
-			dethumbnelize2(self.find('img'), targetID, function(src, tgtID)
-			{
-				var newGalleryBoxImage = document.createElement("img");
-				newGalleryBoxImage.src = src;
-				newGalleryBoxImage.alt = '__galleryimage__'; // mark as gallery image
-				$('#__gallerybox__' + tgtID).append(newGalleryBoxImage);
-				console.log(consolePrefix + 'Inserted image to __gallerybox__' + tgtID);
-			});
+			// sometimes the image doesn't exist, so gallery box has no images
+			// example https://baka-tsuki.org/project/index.php?title=Toaru_Majutsu_no_Index:NT_Volume16
+			if (self.find('img').length > 0) {
+				dethumbnelize2(self.find('img'), targetID, function(src, tgtID)
+				{
+					var newGalleryBoxImage = document.createElement("img");
+					newGalleryBoxImage.src = src;
+					newGalleryBoxImage.alt = '__galleryimage__'; // mark as gallery image
+					$('#__gallerybox__' + tgtID).append(newGalleryBoxImage);
+					console.log(consolePrefix + 'Inserted image to __gallerybox__' + tgtID);
+				});
+			} else {
+				console.log(consolePrefix + 'This gallery box has no image. Skipping.')
+				imageID--;
+			}
 		});
 		// Replace old gallery with the new one
 		oldGallery.replaceWith(newGallery);
