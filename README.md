@@ -13,7 +13,7 @@ Baka-Epub is a tool to make ePub from light novel in Baka-Tsuki. It consists of 
 
 There's also krytykal-to-HTML, which has the same function as Baka-HTML's but for krytykal.org and similar Wordpress sites. Unlike Baka-HTML, it's not a user script but just a plain Js script to run in browser Js console.
 
-Baka-Epub is designed especially for me. So if you're not me, I recommend using [WebToEpub](https://github.com/dteviot/WebToEpub) instead.
+Baka-Epub is designed especially for me and my workflow. Naturally, it's likely unsuitable for non-me users, possibly including you. So if you're not me, I recommend using [WebToEpub](https://github.com/dteviot/WebToEpub) instead.
 
 For change logs, todo list, random notes, or whatever, see [baka_epub_dev_notes.txt](baka_epub_dev_notes.txt) (yes, plain text, and possibly out-of-date).
 
