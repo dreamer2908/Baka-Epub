@@ -14,12 +14,45 @@ div.svg_inner {
 	display: block;
 	text-align: center
 	}
-h1, h2, h3, h4, h5, h6 {
+h1, h2 {
 	text-align: center;
-    page-break-before:always;
-	margin-bottom: 10%;
-	margin-top: 10%;
-	}
+	page-break-before: always;
+	margin-bottom: 5%;
+	margin-top: 5%;
+}
+h3, h4, h5, h6 {
+	text-align: center;
+	margin-bottom: 5%;
+	margin-top: 5%;
+}
+ol, ul {
+	padding-left: 8%;
+}
+img {
+	display: block;
+	max-height: 100%;
+	max-width: 100%;
+	text-align: center;
+}
+a:link {
+	text-decoration: none;
+	color: #0B0080;
+}
+a:visited {
+	text-decoration: none;
+}
+a:hover {
+	text-decoration: underline;
+}
+a:active {
+	text-decoration: underline;
+}
+a.new { /* red link for BT non-existent page */
+	color: #ba0000;
+}
+pre { /* some groups use <pre> tag for character status with no wrapping, thus breaking the view in ebook */
+	white-space: pre-wrap;
+}
 /* Wikitable (Prettytable) class for skinning normal tables */
 table.wikitable,
 table.prettytable {
