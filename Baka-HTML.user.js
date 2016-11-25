@@ -184,13 +184,23 @@ $('#Baka-HTML').click(function(){
 		var self = $(this);
 		var illustrationParagraph = document.createElement("p");
 		var illustration = document.createElement("img");
-		dethumbnelize(self.find('img'), function(src)
-		{
-			illustration.src = src;
-			illustration.alt = '__thumbnail__';
-			illustrationParagraph.appendChild(illustration);
+		if (self.find('img').length > 0) {
+			dethumbnelize(self.find('img'), function(src)
+			{
+				illustration.src = src;
+				illustration.alt = '__thumbnail__';
+				illustrationParagraph.appendChild(illustration);
+				self.replaceWith(illustrationParagraph);
+			});
+		} else {
+			console.log(consolePrefix + 'This thumbnail has no image. Skipping but leaving a mark.')
+			if (self.find('a').length > 0) {
+				illustrationParagraph.innerHTML = self.find('a').text();
+				illustrationParagraph.setAttribute("style", "color: #ba0000");
+				illustrationParagraph.setAttribute("class", "missing_image");
+			}
 			self.replaceWith(illustrationParagraph);
-		});
+		}
 	});
 	// Process inline image like this one https://www.baka-tsuki.org/project/index.php?title=Utsuro_no_Hako:Volume1_1st_time
 	// Pls also kill the anchor, if any
