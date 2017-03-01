@@ -22,7 +22,7 @@ def run(bk):
 	addStylesheetFiles(bk)
 
 	# scan all text files, gather gallery images, get book title, extract and process main texts
-	mainText, galleryImages, bookTitle = processMainText(bk)
+	mainText, galleryImages, bookTitle, suggestedFilenames = processMainText(bk)
 
 	# create cover page
 	coverText, coverImgID = getCoverText(bk)
@@ -92,6 +92,10 @@ def run(bk):
 	bk.setspine(spineElement)
 
 	generateToC(bk, bookTitle, BookId)
+
+	print("Suggested output filename(s):")
+	for s in suggestedFilenames:
+		print(s)
 
 	print('Done.')
 	return 0
@@ -453,10 +457,12 @@ def processMainText(bk):
 	bookTitle = 'Untitled'
 	galleryImages = []
 	mainText = []
+	suggestedFilenames = []
 	for (textID, textHref) in bk.text_iter():
 		if os.path.split(textHref)[1] in ['Cover.xhtml', 'Section0001.xhtml', 'Illustrations.xhtml']: # main text file is anything but these
 			continue
 		print('\nProcessing text file: %s' % textHref)
+		suggestedFilenames.append('%s[bke_v%s_passed].epub' % (os.path.splitext(os.path.basename(textHref))[0], plugin_version))
 
 		html = bk.readfile(textID) # Read the section into html
 		if not isinstance(html, text_type):	# If the section is not str then sets its type to 'utf-8'
@@ -1129,7 +1135,7 @@ def processMainText(bk):
 			bookTitle = soup.title.string.strip()
 
 	print(' ')
-	return mainText, galleryImages, bookTitle
+	return mainText, galleryImages, bookTitle, suggestedFilenames
 
 def removeCoverImageFromGallery(bk, coverImgID, galleryImages):
 	# find and remove cover image from gallery. It might have a different name
