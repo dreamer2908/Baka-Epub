@@ -1208,7 +1208,7 @@ def getCoverText(bk):
 	else:
 		return '', ''
 
-def getSvgForImage(bk, manifestID, svgSizePercent=98, dispWidth=None, dispHeight=None):
+def getSvgForImage(bk, manifestID, svgSizePercent=98, dispWidth=None, dispHeight=None, useImgForLandscape=True, dontWrapInDiv=False):
 	from PIL import Image
 	from io import BytesIO
 
@@ -1227,7 +1227,7 @@ def getSvgForImage(bk, manifestID, svgSizePercent=98, dispWidth=None, dispHeight
 			width, height = im.size
 
 			template = '<div class="svg_outer svg_inner"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="%d%%" height="%d%%" viewBox="0 0 __width__ __height__" preserveAspectRatio="xMidYMid meet"><image width="__width__" height="__height__" xlink:href="__addr__"/></svg></div>' % (svgSizePercent, svgSizePercent)
-			if width > height: # do not wrap landscape images. They actually look better this way
+			if (1.0*width > 1.2*height) and useImgForLandscape: # do not wrap landscape images. They actually look better this way
 				template = '<div class="svg_outer svg_inner"><img alt="" src="__addr__" width="100%" /></div>'
 			if width < 400 and height < 400: # don't stretch small images
 				template = '<div class="svg_outer svg_inner"><img alt="" src="__addr__" /></div>'
@@ -1245,7 +1245,10 @@ def getSvgForImage(bk, manifestID, svgSizePercent=98, dispWidth=None, dispHeight
 			template = '<div class="svg_outer svg_inner"><img alt="" src="__addr__" /></div>'
 			imageCode = template.replace('__addr__', '../Images/' + imgName)
 
-		return imageCode
+		if dontWrapInDiv:
+			return imageCode.replace('<div class="svg_outer svg_inner">', '').replace('</div>','')
+		else:
+			return imageCode
 	else:
 		return ''
 
