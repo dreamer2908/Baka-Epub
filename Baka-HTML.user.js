@@ -3,7 +3,7 @@
 // @namespace   http://localhost
 // @include     /^http[s]*?:\/\/(www\.|)baka-tsuki\.org(:80|:443|)\/project\/index\.php\?title=(.*)/
 // @include     /^http[s]*?:\/\/web\.archive\.org\/web\/\d*\/http[s]*?:\/\/(www\.|)baka-tsuki\.org(:80|:443|)\/project\/index\.php\?title=(.*)/
-// @version     1.2.7
+// @version     1.2.8
 // @grant       none
 // ==/UserScript==
 
@@ -37,13 +37,21 @@ function dethumbnelize(img, success)
 	var ampPos = imgSrc.indexOf('&');
 	var imgName = "";
 	var imgPageURL = "";
+
+	// check if it's web archive
+	if (window.location.href.indexOf('web.archive.org/web/') >= 0) {
+		var bakaPos = imgSrc.indexOf('baka-tsuki.org');
+		var slashPos = imgSrc.indexOf('/', bakaPos);
+		imgPageURL = imgSrc.substring(0, slashPos);
+	}
+
 	if (thumbPos >= 0 && ampPos >= 0) { // resized images src="/project/thumb.php?f=Utsuro_no_Hako_vol1_pic1.jpg&amp;width=1000"
 		imgName = imgSrc.substring(thumbPos + '/project/thumb.php?f='.length , ampPos);
-		imgPageURL = '/project/index.php?title=File:' + imgName;
+		imgPageURL += '/project/index.php?title=File:' + imgName;
 	}
 	else if (imagePos >= 0) { // full-size image src="/project/images/3/37/UtsuroNoHako_vol1.jpg"
 		imgName = imgSrc.substring(imgSrc.lastIndexOf('/') + 1);
-		imgPageURL = '/project/index.php?title=File:' + imgName;
+		imgPageURL += '/project/index.php?title=File:' + imgName;
 	}
 	else { // unknown. fallback to where the image point to.
 		var parent = img.closest('a');
