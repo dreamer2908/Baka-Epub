@@ -4,8 +4,11 @@
 // @include     /^http[s]*?:\/\/(www\.|)baka-tsuki\.org(:80|:443|)\/project\/index\.php\?title=(.*)/
 // @include     /^http[s]*?:\/\/web\.archive\.org\/web\/\d*\/http[s]*?:\/\/(www\.|)baka-tsuki\.org(:80|:443|)\/project\/index\.php\?title=(.*)/
 // @version     1.2.8
+// @require     http://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js
 // @grant       none
 // ==/UserScript==
+
+this.$ = this.jQuery = jQuery.noConflict(true);
 
 var clickMe = document.createElement("li");
 clickMe.innerHTML = '<span><a href="javascript:;" id="Baka-HTML">Baka-HTML</a></span></li>';
@@ -63,7 +66,7 @@ function dethumbnelize(img, success)
 	if (imgPageURL.length > 0) {
 		$.get(imgPageURL, function(data)
 		{
-			var newSrc = $(data).find('.fullImageLink > a').attr('href');
+			var newSrc = $(data.trim()).find('.fullImageLink > a').attr('href');
 			console.log(consolePrefix + 'newSrc = ' + newSrc);
 			success(newSrc);
 			processedImages++;
